@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="app-version" content="${COMMIT_HASH}" />
+    <meta name="robots" content="noindex" />
+    <meta name="hostedSubdomain" content="webflow.io" />
+    <link
+      rel="manifest"
+      type="application/manifest+json"
+      href="/manifest.json"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#3490eb" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://d3e54v103j8qbb.cloudfront.net/gen/css/webflow-designer.4fd2394a2e864467d91f.css"
+    />
+    <title>Webflow - Corpex Template</title>
+    <link
+      rel="icon"
+      href="https://d3e54v103j8qbb.cloudfront.net/static/favicon_designer.88fce7c7f8.png"
+    />
+    <script>
+      //- attributes == {apiKey: "", source: "", hostUrl: "", authenticated: true/false}
+      var source = "designer-preview";
+      var hostUrl = "https://webflow.com";
+      var authenticated = Boolean();
+
+      var forceFalse = false;
+      // When ipstack is not loaded window.wf_continentCode is undefined and
+      // segment consent manager doesn't require consent. We assume consent for
+      // authenticated users
+      switch (source) {
+        case "dashboard":
+          // If in iframe we don't want consent banner to pop up so we don't load ipstack,
+          // but we also use parent window consent manager settings for analytics
+          if (!authenticated) {
+            initCallbacks();
+            loadIpStack();
+          }
+          break;
+        case "designer-preview":
+          // When loading preview.webflow.com/... we don't know if a user is
+          // authenticated or not so we need to call this extra endpoint
+          initCallbacks();
+          isAuthenticated(function (authenticated) {
+            if (!authenticated) {
+              loadIpStack();
+            } else {
+              // Needed to resolve wf_isEU
+              forceFalse = true;
+            }
+          });
+          break;
+        // Default: do nothing
+        // Users in Designer are always authenticated so we don't need to detect
+        // EU continent because we assume consent
+      }
+
+      function initCallbacks() {
+        // ipstack docs: https://ipstack.com/documentation
+        window.wf_onDetectContinent = function (ipstackResponseJson) {
+          window.wf_continentCode = ipstackResponseJson.continent_code;
+          window.wf_userLocation = {
+            country_code: ipstackResponseJson.country_code,
+            city: ipstackResponseJson.city,
+          };
+        };
+
+        window.wf_isEU = function () {
+          // In order to be GDPR-compliant, we want to treat users from unidentified continent
+          // as if they were from EU and in result – show them cookie consent manager
+          // instead of assuming the consent was given:
+          var fallbackValue = true;
+
+          if (forceFalse) {
+            return false;
+          }
+          if (typeof window.wf_continentCode === "string") {
+            return window.wf_continentCode === "EU";
+          }
+          if (typeof Promise === "undefined") {
+            return fallbackValue;
+          }
+
+          // There could be a race condition and wf_continentCode be undefined
+          return new Promise(function (resolve) {
+            var i = 0;
+            var interval = setInterval(function () {
+              // Resolve it if:
+              // - ipstack has loaded and window.wf_continentCode is defined
+              // - 5 seconds passed and wf_continentCode is still undefined
+              // - forceFalse is true (used in preview sites when user is authenticated)
+              if (forceFalse) {
+                clearInterval(interval);
+                return resolve(false);
+              }
+              if (i++ >= 50) {
+                clearInterval(interval);
+                return resolve(fallbackValue);
+              }
+              if (typeof window.wf_continentCode === "string") {
+                clearInterval(interval);
+                return resolve(window.wf_continentCode === "EU");
+              }
+            }, 100);
+          });
+        };
+      }
+
+      function loadIpStack() {
+        var head = document.getElementsByTagName("head")[0];
+        var ipstackScript = document.createElement("script");
+        ipstackScript.src =
+          "https://api.ipstack.com/check?access_key=53038fede8e664ed0b2e5274047e23a8&fields=continent_code,country_code,city&callback=wf_onDetectContinent";
+        head.appendChild(ipstackScript);
+      }
+
+      function isAuthenticated(cb) {
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.open("GET", hostUrl + "/api/user/readOnlyData");
+        xmlhttp.setRequestHeader(
+          "Content-Type",
+          "application/json;charset=UTF-8"
+        );
+        xmlhttp.withCredentials = true;
+        xmlhttp.onload = function () {
+          if (xmlhttp.status === 200) {
+            cb(true);
+          } else {
+            cb(false);
+          }
+        };
+        xmlhttp.send();
+      }
+    </script>
+    <script type="text/javascript">
+      !(function () {
+        var analytics = (window.analytics = window.analytics || []);
+        if (!analytics.initialize)
+          if (analytics.invoked)
+            window.console &&
+              console.error &&
+              console.error("Segment snippet included twice.");
+          else {
+            analytics.invoked = !0;
+            analytics.methods = [
+              "trackSubmit",
+              "trackClick",
+              "trackLink",
+              "trackForm",
+              "pageview",
+              "identify",
+              "reset",
+              "group",
+              "track",
+              "ready",
+              "alias",
+              "debug",
+              "page",
+              "once",
+              "off",
+              "on",
+              "addSourceMiddleware",
+              "addIntegrationMiddleware",
+              "setAnonymousId",
+              "addDestinationMiddleware",
+            ];
+            analytics.factory = function (e) {
+              return function () {
+                var t = Array.prototype.slice.call(arguments);
+                t.unshift(e);
+                analytics.push(t);
+                return analytics;
+              };
+            };
+            for (var e = 0; e < analytics.methods.length; e++) {
+              var key = analytics.methods[e];
+              analytics[key] = analytics.factory(key);
+            }
+            analytics.load = function (key, e) {
+              var t = document.createElement("script");
+              t.type = "text/javascript";
+              t.async = !0;
+              t.src =
+                "https://analytics.webflow.com/analytics.js/v1/" +
+                key +
+                "/analytics.min.js";
+              var n = document.getElementsByTagName("script")[0];
+              n.parentNode.insertBefore(t, n);
+              analytics._loadOptions = e;
+            };
+            analytics._writeKey = "f28KeHZ0I4kQbVZw6U8fqkBHQ5PyOMs0";
+            analytics._cdn = "https://analytics.webflow.com";
+            analytics.SNIPPET_VERSION = "4.15.3";
+            //- Purposefully doesn't include 'analytics.load(API_TOKEN)' here, as this is deferred to segment-consent-manager
+            analytics.page();
+          }
+      })();
+    </script>
+    <script type="text/javascript">
+      Object.defineProperty(window, "wfenvironment", {
+        value: Object.freeze({
+          APP_ENV: "production",
+          designerCanvasCss:
+            "https://d3e54v103j8qbb.cloudfront.net/gen/css/designer-canvas.5b637bf5cf37809ba651.css",
+        }),
+        writable: false,
+        enumerable: false,
+      });
+    </script>
+  </head>
+  <body class="wf-control">
+    <div id="preloader">
+      <div class="loader-wrapper">
+        <svg
+          width="1080"
+          height="674"
+          viewBox="0 0 1080 674"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          class="logo"
+        >
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M1080 0L735.386 673.684H411.695L555.916 394.481H549.445C430.464 548.934 252.942 650.61 -0.000366211 673.684V398.344C-0.000366211 398.344 161.813 388.787 256.938 288.776H-0.000366211V0.0053214H288.771V237.515L295.252 237.489L413.254 0.0053214H631.645V236.009L638.126 235.999L760.556 0H1080Z"
+            fill="white"
+          ></path>
+        </svg>
+        <div class="overlay"></div>
+        <div class="shapes-overlay"></div>
+        <div class="bar">
+          <div class="clipper"><div class="clipped-light"></div></div>
+          <div class="shapes-group">
+            <svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 640 446"
+              version="1.1"
+              xmlns="http://www.w3.org/2000/svg"
+              xmlns:xlink="http://www.w3.org/1999/xlink"
+              xml:space="preserve"
+              style="
+                fill-rule: evenodd;
+                clip-rule: evenodd;
+                stroke-linejoin: round;
+                stroke-miterlimit: 2;
+              "
+              class="cast-blur"
+            >
+              <g
+                id="Artboard1"
+                transform="matrix(0.687089,0,0,0.75508,-695.831,558.042)"
+              >
+                <rect
+                  x="1012.72"
+                  y="-739.051"
+                  width="931.263"
+                  height="590.584"
+                  style="fill: none"
+                ></rect>
+                <g
+                  id="cast-blur"
+                  serif:id="cast blur"
+                  transform="matrix(2.34977e-16,-3.49193,2.58578,1.44076e-16,-1540.19,4648.89)"
+                >
+                  <path
+                    style="fill: rgb(0, 100, 255)"
+                    d="M1458.34,1040.74L1491.73,1202.75C1485.21,1195.23 1467.63,1184.21 1458.34,1183.32C1451.92,1183.48 1434.02,1192.4 1425.08,1203.15L1458.34,1040.74Z"
+                  ></path>
+                </g>
+              </g></svg
+            ><svg
+              clip-rule="evenodd"
+              fill-rule="evenodd"
+              stroke-linejoin="round"
+              stroke-miterlimit="2"
+              viewBox="0 0 640 446"
+              xmlns="http://www.w3.org/2000/svg"
+              class="shadow"
+            >
+              <g transform="matrix(.687089 0 0 .75508 -695.831 558.042)">
+                <path
+                  d="m1012.72-739.051h931.263v590.584h-931.263"
+                  fill="none"
+                ></path>
+                <path
+                  d="m1269.48 1088.74 182.69 221.74h-365.39"
+                  transform="matrix(0 -1.32436 1.45542 0 -53.1962 1237.49)"
+                ></path>
+              </g></svg
+            ><svg
+              clip-rule="evenodd"
+              fill-rule="evenodd"
+              stroke-linejoin="round"
+              stroke-miterlimit="2"
+              viewBox="0 0 640 446"
+              xmlns="http://www.w3.org/2000/svg"
+              class="bar-glow"
+            >
+              <g transform="matrix(.687089 0 0 .75508 -695.831 558.042)">
+                <path
+                  d="m1012.72-739.051h931.263v590.584h-931.263"
+                  fill="none"
+                ></path>
+                <path
+                  d="m1458.34 1040.74c16.09 52.59 24.86 105.12 22.72 157.58h-45.43c-.5-54.12 6.76-106.71 22.71-157.58"
+                  fill="#000eff"
+                  transform="matrix(0 -.202703 1.77038 0 -593.442 -148.149)"
+                ></path>
+              </g></svg
+            ><svg
+              clip-rule="evenodd"
+              fill-rule="evenodd"
+              stroke-linejoin="round"
+              stroke-miterlimit="2"
+              viewBox="0 0 640 446"
+              xmlns="http://www.w3.org/2000/svg"
+              class="mid-glow"
+            >
+              <g transform="matrix(.687089 0 0 .75508 -695.831 558.042)">
+                <path
+                  d="m1012.72-739.051h931.263v590.584h-931.263"
+                  fill="none"
+                ></path>
+                <path
+                  d="m1269.48 1088.74 182.69 221.74h-365.39"
+                  transform="matrix(0 -1.32436 1.45542 0 -53.1962 1237.49)"
+                ></path>
+              </g></svg
+            ><svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 640 446"
+              version="1.1"
+              xmlns="http://www.w3.org/2000/svg"
+              xmlns:xlink="http://www.w3.org/1999/xlink"
+              xml:space="preserve"
+              xmlns:serif="http://www.serif.com/"
+              style="
+                fill-rule: evenodd;
+                clip-rule: evenodd;
+                stroke-linejoin: round;
+                stroke-miterlimit: 2;
+              "
+              class="top-glow-3"
+            >
+              <g
+                id="Artboard1"
+                transform="matrix(0.687089,0,0,0.75508,-695.831,558.042)"
+              >
+                <rect
+                  x="1012.72"
+                  y="-739.051"
+                  width="931.263"
+                  height="590.584"
+                  style="fill: none"
+                ></rect>
+                <g
+                  id="top-glow-2"
+                  serif:id="top glow 2"
+                  transform="matrix(1.36402e-17,-0.202703,1.45542,8.10939e-17,-216.009,-148.149)"
+                >
+                  <path
+                    style="fill: url(#_Linear1)"
+                    d="M1458.34,1040.74C1474.43,1093.33 1483.2,1145.86 1481.06,1198.32L1435.63,1198.32C1435.13,1144.2 1442.39,1091.61 1458.34,1040.74Z"
+                  ></path>
+                </g>
+              </g>
+              <defs>
+                <linearGradient
+                  id="_Linear1"
+                  x1="0"
+                  y1="0"
+                  x2="1"
+                  y2="0"
+                  gradientUnits="userSpaceOnUse"
+                  gradientTransform="matrix(1.12804e-14,151.347,-184.223,9.26731e-15,1460.62,1046.97)"
+                >
+                  <stop
+                    offset="0"
+                    style="stop-color: rgb(49, 144, 255); stop-opacity: 0"
+                  ></stop>
+                  <stop
+                    offset="1"
+                    style="stop-color: rgb(0, 255, 255); stop-opacity: 1"
+                  ></stop>
+                </linearGradient>
+              </defs></svg
+            ><svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 640 446"
+              version="1.1"
+              xmlns="http://www.w3.org/2000/svg"
+              xmlns:xlink="http://www.w3.org/1999/xlink"
+              xml:space="preserve"
+              xmlns:serif="http://www.serif.com/"
+              style="
+                fill-rule: evenodd;
+                clip-rule: evenodd;
+                stroke-linejoin: round;
+                stroke-miterlimit: 2;
+              "
+              class="top-glow-2"
+            >
+              <g
+                id="Artboard1"
+                transform="matrix(0.687089,0,0,0.75508,-695.831,558.042)"
+              >
+                <rect
+                  x="1012.72"
+                  y="-739.051"
+                  width="931.263"
+                  height="590.584"
+                  style="fill: none"
+                ></rect>
+                <g
+                  id="top-glow-2"
+                  serif:id="top glow 2"
+                  transform="matrix(1.36402e-17,-0.202703,1.45542,8.10939e-17,-216.009,-148.149)"
+                >
+                  <path
+                    style="fill: url(#_Linear1)"
+                    d="M1458.34,1040.74C1474.43,1093.33 1483.2,1145.86 1481.06,1198.32L1435.63,1198.32C1435.13,1144.2 1442.39,1091.61 1458.34,1040.74Z"
+                  ></path>
+                </g>
+              </g>
+              <defs>
+                <linearGradient
+                  id="_Linear1"
+                  x1="0"
+                  y1="0"
+                  x2="1"
+                  y2="0"
+                  gradientUnits="userSpaceOnUse"
+                  gradientTransform="matrix(1.12804e-14,151.347,-184.223,9.26731e-15,1460.62,1046.97)"
+                >
+                  <stop
+                    offset="0"
+                    style="stop-color: rgb(49, 144, 255); stop-opacity: 0"
+                  ></stop>
+                  <stop
+                    offset="1"
+                    style="stop-color: rgb(0, 255, 255); stop-opacity: 1"
+                  ></stop>
+                </linearGradient>
+              </defs></svg
+            ><svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 640 446"
+              version="1.1"
+              xmlns="http://www.w3.org/2000/svg"
+              xmlns:xlink="http://www.w3.org/1999/xlink"
+              xml:space="preserve"
+              xmlns:serif="http://www.serif.com/"
+              style="
+                fill-rule: evenodd;
+                clip-rule: evenodd;
+                stroke-linejoin: round;
+                stroke-miterlimit: 2;
+              "
+              class="top-glow-1"
+            >
+              <g
+                id="Artboard1"
+                transform="matrix(0.687089,0,0,0.75508,-695.831,558.042)"
+              >
+                <rect
+                  x="1012.72"
+                  y="-739.051"
+                  width="931.263"
+                  height="590.584"
+                  style="fill: none"
+                ></rect>
+                <g
+                  id="top-glow-1"
+                  serif:id="top glow 1"
+                  transform="matrix(1.36402e-17,-0.202703,2.69976,1.50427e-16,-1707.14,-148.149)"
+                >
+                  <path
+                    style="fill: url(#_Linear1)"
+                    d="M1458.34,1040.74C1474.43,1093.33 1483.2,1145.86 1481.06,1198.32L1435.63,1198.32C1435.13,1144.2 1442.39,1091.61 1458.34,1040.74Z"
+                  ></path>
+                </g>
+              </g>
+              <defs>
+                <linearGradient
+                  id="_Linear1"
+                  x1="0"
+                  y1="0"
+                  x2="1"
+                  y2="0"
+                  gradientUnits="userSpaceOnUse"
+                  gradientTransform="matrix(1.12804e-14,151.347,-184.223,9.26731e-15,1460.62,1046.97)"
+                >
+                  <stop
+                    offset="0"
+                    style="stop-color: rgb(49, 144, 255); stop-opacity: 0"
+                  ></stop>
+                  <stop
+                    offset="1"
+                    style="stop-color: rgb(0, 255, 255); stop-opacity: 1"
+                  ></stop>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="text/javascript">
+      window.performance &&
+        typeof performance.mark === "function" &&
+        performance.mark("start js:execute-preloader");
+    </script>
+    <script type="text/javascript">
+      var Preloader = (function (doc, s, PRELOADER) {
+        var wrapperDiv = doc[s](PRELOADER);
+        function update(phase) {
+          const shapesGroup =
+            wrapperDiv.getElementsByClassName("shapes-group")[0];
+          if (!shapesGroup) return;
+          const clippedLight =
+            wrapperDiv.getElementsByClassName("clipped-light")[0];
+          if (!clippedLight) return;
+          shapesGroup.classList.add(`shapes-phase-${phase}`);
+          clippedLight.classList.add(`clipped-light-${phase}`);
+        }
+        function destroy() {
+          if (wrapperDiv) {
+            const transitionTime = 600;
+            wrapperDiv.style.transition = `opacity ${transitionTime}ms ease-out`;
+            wrapperDiv.style.opacity = "0";
+            setTimeout(function () {
+              const div = wrapperDiv;
+              div.classList.add("hidden");
+              setTimeout(function () {
+                if (div.parentNode) {
+                  div.parentNode.removeChild(div);
+                }
+                wrapperDiv = null;
+              }, transitionTime * 5);
+            }, transitionTime);
+          }
+        }
+        return { update: update, destroy: destroy };
+      })(document, "getElementById", "preloader");
+    </script>
+    <script type="text/javascript">
+      window.performance &&
+        typeof performance.mark === "function" &&
+        performance.mark("end js:execute-preloader");
+    </script>
+    <div id="workspace" style="height: 100%"></div>
+    <div id="debug-overlay"></div>
+    <iframe id="responsive-images-iframe" src="/site/empty.html"></iframe>
+    <div id="designer-app-react-mount"></div>
+    <div id="preload-assets"></div>
+    <div id="drag-ghost"></div>
+    <div id="wf-eyedropper-button"></div>
+    <script type="text/javascript">
+      if (typeof Preloader !== "undefined") Preloader.update(1);
+    </script>
+    <script type="text/javascript">
+      window.performance &&
+        typeof performance.mark === "function" &&
+        performance.mark("start js:execute-app");
+    </script>
+    <script type="text/plain" id="wf-initial-data">
+      {&quot;experimentAssignments&quot;:[],&quot;featureConfig&quot;:{&quot;config&quot;:{&quot;clientSdkKey&quot;:&quot;client-nJfFsZScKezfQDA01wjoxovvPhAK4FTSLslypZ2pHYL&quot;,&quot;tier&quot;:&quot;production&quot;},&quot;identity&quot;:{&quot;userID&quot;:&quot;unauthenticated-users&quot;,&quot;userAgent&quot;:&quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36&quot;,&quot;ip&quot;:&quot;103.164.255.254&quot;,&quot;custom&quot;:{&quot;app&quot;:&quot;preview&quot;,&quot;path&quot;:&quot;/&quot;,&quot;pathWithParams&quot;:&quot;/&quot;,&quot;siteCreated&quot;:&quot;1723518134466&quot;,&quot;siteShortName&quot;:&quot;corpex-template&quot;,&quot;userVerified&quot;:&quot;false&quot;,&quot;isOveragesEnabled&quot;:&quot;false&quot;},&quot;customIDs&quot;:{&quot;stableID&quot;:&quot;107e3efd-12d7-4afe-bbe6-3ed932ead305&quot;,&quot;anonymousId&quot;:&quot;107e3efd-12d7-4afe-bbe6-3ed932ead305&quot;,&quot;siteId&quot;:&quot;66baccb64bf2f5f5a69ec8bf&quot;},&quot;privateAttributes&quot;:{},&quot;statsigEnvironment&quot;:{&quot;tier&quot;:&quot;production&quot;}},&quot;values&quot;:{&quot;feature_gates&quot;:{&quot;wszcEegSGqTRufsiDYM4VpWG3yfUd1/Q2WDm8dKjhU4=&quot;:{&quot;name&quot;:&quot;wszcEegSGqTRufsiDYM4VpWG3yfUd1/Q2WDm8dKjhU4=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;OyEtR8Xi3JUawcRqzKueZxQ3QqWYyN086mI95B/a9Qc=&quot;:{&quot;name&quot;:&quot;OyEtR8Xi3JUawcRqzKueZxQ3QqWYyN086mI95B/a9Qc=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;:{&quot;name&quot;:&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;6DYH2z0Gemp9SGVuRNM04B&quot;,&quot;secondary_exposures&quot;:[]},&quot;HBu/+WX81ck/QRL3bGpcKBo4Od+zywIYCgcrsX+ndQg=&quot;:{&quot;name&quot;:&quot;HBu/+WX81ck/QRL3bGpcKBo4Od+zywIYCgcrsX+ndQg=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;b6X6lpBwM7EYZVnspY2ECrAYLHMu3XZ55dWqCrZs9Uw=&quot;:{&quot;name&quot;:&quot;b6X6lpBwM7EYZVnspY2ECrAYLHMu3XZ55dWqCrZs9Uw=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;5hLueuvpFDGmXJdZqgA6B1&quot;,&quot;secondary_exposures&quot;:[]},&quot;pzA4bRcsLmVYwIQmcKFc8lRaB6toUfjRe8aX6zUkgm0=&quot;:{&quot;name&quot;:&quot;pzA4bRcsLmVYwIQmcKFc8lRaB6toUfjRe8aX6zUkgm0=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;7mHxPxgU7khK1USyiASyao&quot;,&quot;secondary_exposures&quot;:[{&quot;gate&quot;:&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;6DYH2z0Gemp9SGVuRNM04B&quot;}]},&quot;AyRy6ItaZ+3pdlyQ2yZ/4zxnq3XuXdPGkkDvk4tPf6o=&quot;:{&quot;name&quot;:&quot;AyRy6ItaZ+3pdlyQ2yZ/4zxnq3XuXdPGkkDvk4tPf6o=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[{&quot;gate&quot;:&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;6DYH2z0Gemp9SGVuRNM04B&quot;}]},&quot;jqaxU6xWfRQV8c/i/ERw2Q5XMqRF/AuvAYJPk3lfUI0=&quot;:{&quot;name&quot;:&quot;jqaxU6xWfRQV8c/i/ERw2Q5XMqRF/AuvAYJPk3lfUI0=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;lMZRnBKelZARxKZKvcX8d8F82wzheem0P2QRsYidDWs=&quot;:{&quot;name&quot;:&quot;lMZRnBKelZARxKZKvcX8d8F82wzheem0P2QRsYidDWs=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;22KuRdpoKbmB6HGBr79ibu&quot;,&quot;secondary_exposures&quot;:[]},&quot;0rn3MntEyYdSc7Oqsq+m2aBE6Cf4FOXltGGYrRmIp98=&quot;:{&quot;name&quot;:&quot;0rn3MntEyYdSc7Oqsq+m2aBE6Cf4FOXltGGYrRmIp98=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;5OfqogC748NaVZQApdH8Zk&quot;,&quot;secondary_exposures&quot;:[]},&quot;I3K0nh5mmBeL02c/ir3Q1UigISY6ReBhiFbKsrZ3Ki0=&quot;:{&quot;name&quot;:&quot;I3K0nh5mmBeL02c/ir3Q1UigISY6ReBhiFbKsrZ3Ki0=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;2Rbnn3nbaVDlMAH5BdmepE&quot;,&quot;secondary_exposures&quot;:[]},&quot;CtVQqNWd9j4J7FIu6gkZuXP04W2A9VIvRP0lO0vGg4o=&quot;:{&quot;name&quot;:&quot;CtVQqNWd9j4J7FIu6gkZuXP04W2A9VIvRP0lO0vGg4o=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;5rlegi2iZRyCRkOPlUlKQU:100.00:4&quot;,&quot;secondary_exposures&quot;:[]},&quot;j4elZw2w19BSZ6ojMlnRY68fYNlfS6dPjYWyVki4j+w=&quot;:{&quot;name&quot;:&quot;j4elZw2w19BSZ6ojMlnRY68fYNlfS6dPjYWyVki4j+w=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;RsYysVV70gPw0I2C23r4QEqOqUzDtW7dKlNtEjNPevk=&quot;:{&quot;name&quot;:&quot;RsYysVV70gPw0I2C23r4QEqOqUzDtW7dKlNtEjNPevk=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[{&quot;gate&quot;:&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;6DYH2z0Gemp9SGVuRNM04B&quot;}]},&quot;q8KpOi8pd1SLtcqa8Z+BiAC0TJHQNj0U+TIC68C+1d8=&quot;:{&quot;name&quot;:&quot;q8KpOi8pd1SLtcqa8Z+BiAC0TJHQNj0U+TIC68C+1d8=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[{&quot;gate&quot;:&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;6DYH2z0Gemp9SGVuRNM04B&quot;}]},&quot;zcIB6YGIGYW4S8s7ocbcYts7jpcMaOGwvfJxPBFy/Ig=&quot;:{&quot;name&quot;:&quot;zcIB6YGIGYW4S8s7ocbcYts7jpcMaOGwvfJxPBFy/Ig=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[{&quot;gate&quot;:&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;6DYH2z0Gemp9SGVuRNM04B&quot;},{&quot;gate&quot;:&quot;ReTHz5O++2bhIDWL5iofoqpgFh3DS7gFBY5lndMX0a4=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;default&quot;}]},&quot;8/gMxAfniT5Ur4ZddM6OlyOqzEHd3vpiPSYMpWKDFIA=&quot;:{&quot;name&quot;:&quot;8/gMxAfniT5Ur4ZddM6OlyOqzEHd3vpiPSYMpWKDFIA=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;5RhNL6oqy24bcxuC0oZrQZ:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;mzBUjnJfzGbV7f3LWr3EYLx76n0je7vMK+HZL3inDZQ=&quot;:{&quot;name&quot;:&quot;mzBUjnJfzGbV7f3LWr3EYLx76n0je7vMK+HZL3inDZQ=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;36qdfAaAzQ6hEl6GZnOVbB&quot;,&quot;secondary_exposures&quot;:[{&quot;gate&quot;:&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;6DYH2z0Gemp9SGVuRNM04B&quot;}]},&quot;xKKTaR4Y0DjPwX8qnqDlh2y6laPCXFlBuJbOYAJLd1A=&quot;:{&quot;name&quot;:&quot;xKKTaR4Y0DjPwX8qnqDlh2y6laPCXFlBuJbOYAJLd1A=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;3XHir0A2oMyQjx1ohnqtwN&quot;,&quot;secondary_exposures&quot;:[{&quot;gate&quot;:&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;6DYH2z0Gemp9SGVuRNM04B&quot;}]},&quot;2MKxBjxJFF+pjCgjnn13Zs/sMPqGAwz8IA8oMGKno2E=&quot;:{&quot;name&quot;:&quot;2MKxBjxJFF+pjCgjnn13Zs/sMPqGAwz8IA8oMGKno2E=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;4/ZRsjwjianDr7cuDz3MnxIPhU/0ThbMbuKl9sChCbo=&quot;:{&quot;name&quot;:&quot;4/ZRsjwjianDr7cuDz3MnxIPhU/0ThbMbuKl9sChCbo=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;6mDcLhDXMywoNzXU3guFyu:0.00:3&quot;,&quot;secondary_exposures&quot;:[]},&quot;twJ5u6nEU8i7O55z/jfdGpLMxFgmzoZL3CQKuBNCkBs=&quot;:{&quot;name&quot;:&quot;twJ5u6nEU8i7O55z/jfdGpLMxFgmzoZL3CQKuBNCkBs=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;2RIdGkmf41mJnytXCLsKjP&quot;,&quot;secondary_exposures&quot;:[]},&quot;0Nul+UtSIc54GNelS4NpriUgFSNdZp166nNDWm85UUw=&quot;:{&quot;name&quot;:&quot;0Nul+UtSIc54GNelS4NpriUgFSNdZp166nNDWm85UUw=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;seCri7Zl3fom4rsiFngkgnae6iogDDnZ7SCzgk/lbj0=&quot;:{&quot;name&quot;:&quot;seCri7Zl3fom4rsiFngkgnae6iogDDnZ7SCzgk/lbj0=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;/eQKgrRe44npSpQHYd8zK6n8gfGm1C5etTvu+Yh+sYg=&quot;:{&quot;name&quot;:&quot;/eQKgrRe44npSpQHYd8zK6n8gfGm1C5etTvu+Yh+sYg=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;DLUIwqZ4gqnkap2OBn2YO6Au3y4bHd/9pXWGUAEuMYM=&quot;:{&quot;name&quot;:&quot;DLUIwqZ4gqnkap2OBn2YO6Au3y4bHd/9pXWGUAEuMYM=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;ZUomupwLYSWXi1Bsc0Q5I4QQhz3JSOBZyYBYEjDJjuo=&quot;:{&quot;name&quot;:&quot;ZUomupwLYSWXi1Bsc0Q5I4QQhz3JSOBZyYBYEjDJjuo=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;01mLI2iXylyDgNDSJZmlgh&quot;,&quot;secondary_exposures&quot;:[]},&quot;AszpXx6GJ0b6pVs1NuWGFWPM95/uPAZXy/X6lrfHpKE=&quot;:{&quot;name&quot;:&quot;AszpXx6GJ0b6pVs1NuWGFWPM95/uPAZXy/X6lrfHpKE=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;BrycHj3Uif/E3/joPAJ/yfqiH0y7P8YmmP9i3XjnR94=&quot;:{&quot;name&quot;:&quot;BrycHj3Uif/E3/joPAJ/yfqiH0y7P8YmmP9i3XjnR94=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;5xGEeNkR2BxQjFyLOZq7SI&quot;,&quot;secondary_exposures&quot;:[]},&quot;+A3n/FuKm2cue8/h6JGINWjAcvPWu4QXhNn6zdLt4qY=&quot;:{&quot;name&quot;:&quot;+A3n/FuKm2cue8/h6JGINWjAcvPWu4QXhNn6zdLt4qY=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;dpoqr065e3BMPES3mHU0e3h1MrOMj8U8du01JYaBKBE=&quot;:{&quot;name&quot;:&quot;dpoqr065e3BMPES3mHU0e3h1MrOMj8U8du01JYaBKBE=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;6ZkluQSSPPZeBUsaDJApOw:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;9eOqbJYbX/lDgN3AFRVfp42Rv5kAcQjTVaGf4rmNFj8=&quot;:{&quot;name&quot;:&quot;9eOqbJYbX/lDgN3AFRVfp42Rv5kAcQjTVaGf4rmNFj8=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;1uGqcnA8i9tlWCnnpAa17X:100.00:4&quot;,&quot;secondary_exposures&quot;:[]},&quot;pfdJ9RTlU4Mo+4hlyUI1AWFiBg/kpMXhksWhOudXh6c=&quot;:{&quot;name&quot;:&quot;pfdJ9RTlU4Mo+4hlyUI1AWFiBg/kpMXhksWhOudXh6c=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;5531Lk4npipDjyZz3jGQvn&quot;,&quot;secondary_exposures&quot;:[{&quot;gate&quot;:&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;6DYH2z0Gemp9SGVuRNM04B&quot;}]},&quot;TMNDqyje/vQDEHjCygHQ8322UQIoIl+Zt0FXFamqqBc=&quot;:{&quot;name&quot;:&quot;TMNDqyje/vQDEHjCygHQ8322UQIoIl+Zt0FXFamqqBc=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;4HDDvXBkdEDc75ngJ5hpZV:0.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;YjCaV4Enws6JX1sU23e5JEm9clTNGQDyASM7DAVMPC0=&quot;:{&quot;name&quot;:&quot;YjCaV4Enws6JX1sU23e5JEm9clTNGQDyASM7DAVMPC0=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;RNrETXTx1goA+cNRwZ0oSg96+eaPh46yoTQAMDGgP9A=&quot;:{&quot;name&quot;:&quot;RNrETXTx1goA+cNRwZ0oSg96+eaPh46yoTQAMDGgP9A=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;2tPYgRHDUIV3ZMqiEVoqhg&quot;,&quot;secondary_exposures&quot;:[]},&quot;e1nV4rbOeCZmCMR0wNVO3H5eLY3JXwHN/i4dhTtIwaY=&quot;:{&quot;name&quot;:&quot;e1nV4rbOeCZmCMR0wNVO3H5eLY3JXwHN/i4dhTtIwaY=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[{&quot;gate&quot;:&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;6DYH2z0Gemp9SGVuRNM04B&quot;}]},&quot;FzFr7wq/kppsOiyGliRMNoqXuup16iPHp3gX70eNNYI=&quot;:{&quot;name&quot;:&quot;FzFr7wq/kppsOiyGliRMNoqXuup16iPHp3gX70eNNYI=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;6GHWDAQLh7W4BFZlIpV4H8&quot;,&quot;secondary_exposures&quot;:[]},&quot;8gI6WmFvbDz8SMrbx8MzRmUMR9tV7xaCtop+UypyGe4=&quot;:{&quot;name&quot;:&quot;8gI6WmFvbDz8SMrbx8MzRmUMR9tV7xaCtop+UypyGe4=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;3BdVaVl8zT6Y8DmUDZR5Vc:100.00:21&quot;,&quot;secondary_exposures&quot;:[]},&quot;hZOt6V9BSR8/ICxKace2yYYtjEANx66oO8CcAi+1Vrk=&quot;:{&quot;name&quot;:&quot;hZOt6V9BSR8/ICxKace2yYYtjEANx66oO8CcAi+1Vrk=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;5oTihpxUIzGjuV57OJVI8L:0.00:4&quot;,&quot;secondary_exposures&quot;:[]},&quot;NNmzAPr+W5fwYbhgYsNDbdlVTarI73Cry85ZiKK5Yjc=&quot;:{&quot;name&quot;:&quot;NNmzAPr+W5fwYbhgYsNDbdlVTarI73Cry85ZiKK5Yjc=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;6kpX1eIi74R0XjJBi9xhWx&quot;,&quot;secondary_exposures&quot;:[]},&quot;npgTGGOiir1cOU5nJAWNjJE4NZ9gAcPFaZfxrb0eMKQ=&quot;:{&quot;name&quot;:&quot;npgTGGOiir1cOU5nJAWNjJE4NZ9gAcPFaZfxrb0eMKQ=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;52g9nCowWRyoN01K3ViSCK:100.00:5&quot;,&quot;secondary_exposures&quot;:[]},&quot;vwFAslNUI5VaqEwLhc+gYo7DScIzDEZE2gO3zlPsfmE=&quot;:{&quot;name&quot;:&quot;vwFAslNUI5VaqEwLhc+gYo7DScIzDEZE2gO3zlPsfmE=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;XCK6Rqs7dIOv2tov2l7Uo7u9d/nuhp5p/a3eamin0So=&quot;:{&quot;name&quot;:&quot;XCK6Rqs7dIOv2tov2l7Uo7u9d/nuhp5p/a3eamin0So=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[{&quot;gate&quot;:&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;6DYH2z0Gemp9SGVuRNM04B&quot;},{&quot;gate&quot;:&quot;ReTHz5O++2bhIDWL5iofoqpgFh3DS7gFBY5lndMX0a4=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;default&quot;},{&quot;gate&quot;:&quot;yEamMG9MNMhqYXVzoFpPHmgC3ZEpp1xVqD6+kRJRbBg=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;default&quot;}]},&quot;mhuZ5qlzsZNBNnxhKt6Wc54QgRBLQMlu+fjvrfdbasc=&quot;:{&quot;name&quot;:&quot;mhuZ5qlzsZNBNnxhKt6Wc54QgRBLQMlu+fjvrfdbasc=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;43ez68XKItOpK8OnunNV5E:0.00:2&quot;,&quot;secondary_exposures&quot;:[]},&quot;ykr186SrOhY+yOz8iNY/P7qz0FUH3y3fpBKellLDB34=&quot;:{&quot;name&quot;:&quot;ykr186SrOhY+yOz8iNY/P7qz0FUH3y3fpBKellLDB34=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;53fF1cbeHgvzmb04i7IHm2:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;DDA8rh6x+Vk9i0kkz3t4QIfQkJdeAKrM3dRhKEK5Jfo=&quot;:{&quot;name&quot;:&quot;DDA8rh6x+Vk9i0kkz3t4QIfQkJdeAKrM3dRhKEK5Jfo=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;6WAJfHrHjoBt7qpNovfR2m:100.00:2&quot;,&quot;secondary_exposures&quot;:[]},&quot;S4JZrvyHmR09Nyc3HtQfWtbrRptB8ZMYpLvZwp0IYbs=&quot;:{&quot;name&quot;:&quot;S4JZrvyHmR09Nyc3HtQfWtbrRptB8ZMYpLvZwp0IYbs=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;6Fkpty0I0HfLt5ffZ3yclJ&quot;,&quot;secondary_exposures&quot;:[]},&quot;avA1E8BxM4R5laHGefKBQAB7YDI2f8nr3HYF14FeS7A=&quot;:{&quot;name&quot;:&quot;avA1E8BxM4R5laHGefKBQAB7YDI2f8nr3HYF14FeS7A=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;17PkESyEpHHIJwIm7wuhzm:100.00:13&quot;,&quot;secondary_exposures&quot;:[]},&quot;+Jf7kV68EXy0dXjCJWMvcU8AqAhWvxQJQ8ApuoUao5M=&quot;:{&quot;name&quot;:&quot;+Jf7kV68EXy0dXjCJWMvcU8AqAhWvxQJQ8ApuoUao5M=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;1ugFBVolOlmqEKFUgC9osp:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;uiwG/Iw4TmyLzOFolp1NRJb+0ds5SzZ2Bexljli3R4U=&quot;:{&quot;name&quot;:&quot;uiwG/Iw4TmyLzOFolp1NRJb+0ds5SzZ2Bexljli3R4U=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;u4QnUg7ov8/47Zyevx+Gy1gfN+63x7oWOWAujMsgBWw=&quot;:{&quot;name&quot;:&quot;u4QnUg7ov8/47Zyevx+Gy1gfN+63x7oWOWAujMsgBWw=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;7qRVxHOstYJMxeapPPCoUD&quot;,&quot;secondary_exposures&quot;:[]},&quot;7o4zfLmqRkJAQ4SwI5ydPFJF2yiMCkRKSykA1RAlTCA=&quot;:{&quot;name&quot;:&quot;7o4zfLmqRkJAQ4SwI5ydPFJF2yiMCkRKSykA1RAlTCA=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;uthms6h0ea3uDcfvLmyhYIuWUj/ZjEobjCucOB0hLQY=&quot;:{&quot;name&quot;:&quot;uthms6h0ea3uDcfvLmyhYIuWUj/ZjEobjCucOB0hLQY=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;3MClV6ERIlJKSDEUmOR7AS:100.00:6&quot;,&quot;secondary_exposures&quot;:[]},&quot;M68XHgVRoF+CgWOuAgzziTucAtV7ElqMmEFJQp5m3as=&quot;:{&quot;name&quot;:&quot;M68XHgVRoF+CgWOuAgzziTucAtV7ElqMmEFJQp5m3as=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;QyOkXQQ0AOJ6N2ROFKTm8CNWMAZf7QJ8z6bIJPWCmzM=&quot;:{&quot;name&quot;:&quot;QyOkXQQ0AOJ6N2ROFKTm8CNWMAZf7QJ8z6bIJPWCmzM=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;6YUpU9bLhqTMgYeWnFfUG8:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;yEamMG9MNMhqYXVzoFpPHmgC3ZEpp1xVqD6+kRJRbBg=&quot;:{&quot;name&quot;:&quot;yEamMG9MNMhqYXVzoFpPHmgC3ZEpp1xVqD6+kRJRbBg=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[{&quot;gate&quot;:&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;6DYH2z0Gemp9SGVuRNM04B&quot;}]},&quot;m5RDDyanSzWuROZ/yabAXAiECjmS4Y7ptst7znwh00M=&quot;:{&quot;name&quot;:&quot;m5RDDyanSzWuROZ/yabAXAiECjmS4Y7ptst7znwh00M=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;oyHKipHL55IaFrhtCcLofSEw9vQ5cQD1k6vYR22rDl4=&quot;:{&quot;name&quot;:&quot;oyHKipHL55IaFrhtCcLofSEw9vQ5cQD1k6vYR22rDl4=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;xjGnZm1ewvk+X84nNiz5EcgRjcAdXtN/+mIGxrD9xBw=&quot;:{&quot;name&quot;:&quot;xjGnZm1ewvk+X84nNiz5EcgRjcAdXtN/+mIGxrD9xBw=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;6VjZF3B6S2pogRcYSCvTFr:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;GD4875nvSkNCIEZ4tBO3sEPOv41ioJhEq4HAMewXKys=&quot;:{&quot;name&quot;:&quot;GD4875nvSkNCIEZ4tBO3sEPOv41ioJhEq4HAMewXKys=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;XUzrTq7Q8etYgNgBDJV4y:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;kIgH5PTz00ebMB/LNtAxtuAwPP+gtXqr2a03x3/jkN0=&quot;:{&quot;name&quot;:&quot;kIgH5PTz00ebMB/LNtAxtuAwPP+gtXqr2a03x3/jkN0=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;2CaaGcOYr2jQ1j/RYPgcdEKUMd2NimVbaW9Dhme2K7c=&quot;:{&quot;name&quot;:&quot;2CaaGcOYr2jQ1j/RYPgcdEKUMd2NimVbaW9Dhme2K7c=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;6SNArMCfFxkOG4PypDBWFL:100.00:2&quot;,&quot;secondary_exposures&quot;:[]},&quot;WTt79TgVYusVFFZbbtgD6IjHuxJo+eazLMALSeHAOzI=&quot;:{&quot;name&quot;:&quot;WTt79TgVYusVFFZbbtgD6IjHuxJo+eazLMALSeHAOzI=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;ikvazkAbsV39GS+10Vmh7RjiO2z1ejdlgeoiLidNThs=&quot;:{&quot;name&quot;:&quot;ikvazkAbsV39GS+10Vmh7RjiO2z1ejdlgeoiLidNThs=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;21AUbbLP55YUfUzXBDt38Z:100.00:4&quot;,&quot;secondary_exposures&quot;:[]},&quot;bbY/aaRB2/MTTsUUnt1VcS9sp5pvQFIHbzyMxfj/tqc=&quot;:{&quot;name&quot;:&quot;bbY/aaRB2/MTTsUUnt1VcS9sp5pvQFIHbzyMxfj/tqc=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;0w7oqcwyEoOXXe5iwf2QWWC4HfwLALNeKgZ2/fl2AvA=&quot;:{&quot;name&quot;:&quot;0w7oqcwyEoOXXe5iwf2QWWC4HfwLALNeKgZ2/fl2AvA=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;30Zf8SH2suXsFGIg45HYCm:100.00:4&quot;,&quot;secondary_exposures&quot;:[]},&quot;JU2o5r6Xqq5rET5oe2krqsXUQA9IOYqUVMVbjoCZHsQ=&quot;:{&quot;name&quot;:&quot;JU2o5r6Xqq5rET5oe2krqsXUQA9IOYqUVMVbjoCZHsQ=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;3XGyJJW8YQ2sZhp9DysyGf:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;klqOuvQQstebNaPM5b7XzMZQXSUHgx7vxxrP7mKa9Xs=&quot;:{&quot;name&quot;:&quot;klqOuvQQstebNaPM5b7XzMZQXSUHgx7vxxrP7mKa9Xs=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;115fhkUKQwLSSROFiN19DS:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;+kvpibpuTdxgl8JQqyDx0umcdj9lKWmdERb8e7YjNiM=&quot;:{&quot;name&quot;:&quot;+kvpibpuTdxgl8JQqyDx0umcdj9lKWmdERb8e7YjNiM=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;disabled&quot;,&quot;secondary_exposures&quot;:[]},&quot;nFOc754ZZ04U18Bv+sEqPOETNu1j/RWm59lDmPoxhRE=&quot;:{&quot;name&quot;:&quot;nFOc754ZZ04U18Bv+sEqPOETNu1j/RWm59lDmPoxhRE=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;4uiiUCw7JbnKVKEUq94RhK&quot;,&quot;secondary_exposures&quot;:[]},&quot;zH8UApVGad22z0jFHWJPgsL6/+ioNFSdeM4tki1dEes=&quot;:{&quot;name&quot;:&quot;zH8UApVGad22z0jFHWJPgsL6/+ioNFSdeM4tki1dEes=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;irdJsWy4YAwH7k5cqYQAW:25.00:4&quot;,&quot;secondary_exposures&quot;:[]},&quot;KwNdLm13JslISvQgWOQm9Zm7GDrqF3bhOoswENyOAxI=&quot;:{&quot;name&quot;:&quot;KwNdLm13JslISvQgWOQm9Zm7GDrqF3bhOoswENyOAxI=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;6fWta9JVtGiDMWsugsKHyJ:100.00:2&quot;,&quot;secondary_exposures&quot;:[]},&quot;CJr1o47h/2JgTHmTYbMIIFVwzAGyCQiWq61QbzYoM54=&quot;:{&quot;name&quot;:&quot;CJr1o47h/2JgTHmTYbMIIFVwzAGyCQiWq61QbzYoM54=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;4k8nuQGOtniAr76wJDFoY:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;i4x5O82EXRgsybef/nEJVxKihaVpGHa7SSp2wNrcQSw=&quot;:{&quot;name&quot;:&quot;i4x5O82EXRgsybef/nEJVxKihaVpGHa7SSp2wNrcQSw=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;569VGXh60GyZrID2jR81Q9:100.00:12&quot;,&quot;secondary_exposures&quot;:[]},&quot;IecZDrAiYHZ2FX54Q/INHQRe0ujkhGtEjFuvzZo7x0I=&quot;:{&quot;name&quot;:&quot;IecZDrAiYHZ2FX54Q/INHQRe0ujkhGtEjFuvzZo7x0I=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;7HBTjVqgQYxMq94JbPJLlK:100.00:11&quot;,&quot;secondary_exposures&quot;:[]},&quot;bY9CwBP5j4ofVD/Qc7fgKdh5N2p1yzfO+3TBmfufj+A=&quot;:{&quot;name&quot;:&quot;bY9CwBP5j4ofVD/Qc7fgKdh5N2p1yzfO+3TBmfufj+A=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;7znYNOnBrORmVRcI7EE3kh:100.00:3&quot;,&quot;secondary_exposures&quot;:[]},&quot;+a7/qrZM8KxgbzEYQFUjUCQFvpoxRKG5a2xE5bmb5cc=&quot;:{&quot;name&quot;:&quot;+a7/qrZM8KxgbzEYQFUjUCQFvpoxRKG5a2xE5bmb5cc=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;duF0LtcI4NHhgMhDn/fViguERQqiXiREnt1uY6elxuE=&quot;:{&quot;name&quot;:&quot;duF0LtcI4NHhgMhDn/fViguERQqiXiREnt1uY6elxuE=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;qo89NZbme+e7+TR8W9q4ZzVpfBgm5f4sIK4lmlJJZ8k=&quot;:{&quot;name&quot;:&quot;qo89NZbme+e7+TR8W9q4ZzVpfBgm5f4sIK4lmlJJZ8k=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;3HvbKC4VIYLRtFPnKj0ZIm:100.00:2&quot;,&quot;secondary_exposures&quot;:[]},&quot;Z30olfa0xzqfZItQIWZJue3oRzhkBA+nuCA8hcRdxRw=&quot;:{&quot;name&quot;:&quot;Z30olfa0xzqfZItQIWZJue3oRzhkBA+nuCA8hcRdxRw=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;7v6Oj64zC3txSdNM8WyqJ5&quot;,&quot;secondary_exposures&quot;:[]},&quot;uP+ZzGwKBh+FYBXbqZtd32p45/OTlDem6FfMx/8OpCI=&quot;:{&quot;name&quot;:&quot;uP+ZzGwKBh+FYBXbqZtd32p45/OTlDem6FfMx/8OpCI=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;1tAgyiw7xysVj3idDeuzJM&quot;,&quot;secondary_exposures&quot;:[]},&quot;C/5LSec5a5dvUgJbQG1ErBFEP+Az0HHizao78wic5BI=&quot;:{&quot;name&quot;:&quot;C/5LSec5a5dvUgJbQG1ErBFEP+Az0HHizao78wic5BI=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;DV5SvculpCgU62iO9dqjdXDq2NZzcZV/98XKJeIodPc=&quot;:{&quot;name&quot;:&quot;DV5SvculpCgU62iO9dqjdXDq2NZzcZV/98XKJeIodPc=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;aRkYfJM+J8QK/4ctRXmPW8fpZt96HgtI+Vt4w1TJqFw=&quot;:{&quot;name&quot;:&quot;aRkYfJM+J8QK/4ctRXmPW8fpZt96HgtI+Vt4w1TJqFw=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;1QHrBMwYzB9DlMp7K1Z9j3:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;aTgdgTg3HuG2EnCKMUKWPS7IKzHa2A6MPD/HTC2OnDc=&quot;:{&quot;name&quot;:&quot;aTgdgTg3HuG2EnCKMUKWPS7IKzHa2A6MPD/HTC2OnDc=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;2bQMcH11t5ZrdZDFAzWCq5D6s61DSuaFkYFRIDm7xwg=&quot;:{&quot;name&quot;:&quot;2bQMcH11t5ZrdZDFAzWCq5D6s61DSuaFkYFRIDm7xwg=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;4b3WJ2Df8DRdMnQ7Qmm9N3:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;pLIbUAyBVzklGHnVkB1mmXeFlr+mt/yEqhl2nYGyTl8=&quot;:{&quot;name&quot;:&quot;pLIbUAyBVzklGHnVkB1mmXeFlr+mt/yEqhl2nYGyTl8=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;1LQ0PLWNhD92OfJ5ivC8k4:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;Mohr77Q7dxdMguKfm9Dp+4QZR4J21VTSH1maVgI3cvY=&quot;:{&quot;name&quot;:&quot;Mohr77Q7dxdMguKfm9Dp+4QZR4J21VTSH1maVgI3cvY=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;eiobECKNtfwlqhgncU3Fs:100.00:8&quot;,&quot;secondary_exposures&quot;:[]},&quot;mDRiTqVFjYXWAoMmTKvGYstVKq4e0nZ5Ckliw/B0aEo=&quot;:{&quot;name&quot;:&quot;mDRiTqVFjYXWAoMmTKvGYstVKq4e0nZ5Ckliw/B0aEo=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;4GxqeVlMf5pohFY54f6pbF:100.00:7&quot;,&quot;secondary_exposures&quot;:[]},&quot;8mjRvgjeEnrPXy8+PRfmTkymyy2TZZroyVA+UwoQP3Y=&quot;:{&quot;name&quot;:&quot;8mjRvgjeEnrPXy8+PRfmTkymyy2TZZroyVA+UwoQP3Y=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;4fbdU3EV39051L2lS3khmP:100.00:5&quot;,&quot;secondary_exposures&quot;:[]},&quot;9q5U1E2jY0N4SeEkrtIJaTni2dqqoMZRcQjgTozZe6A=&quot;:{&quot;name&quot;:&quot;9q5U1E2jY0N4SeEkrtIJaTni2dqqoMZRcQjgTozZe6A=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;dHp4QfzRtLvnW6XpYp9LkZ/+UmkiRSJnCTDTHkJxhyg=&quot;:{&quot;name&quot;:&quot;dHp4QfzRtLvnW6XpYp9LkZ/+UmkiRSJnCTDTHkJxhyg=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;6yBMEwOrYk0S8hWJ4BwrRT:100.00:4&quot;,&quot;secondary_exposures&quot;:[]},&quot;iyiyfmoKLG7KcFAH8fMkFZGer4wu8vHJodF4ieLhLsc=&quot;:{&quot;name&quot;:&quot;iyiyfmoKLG7KcFAH8fMkFZGer4wu8vHJodF4ieLhLsc=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;8oMNOGWYYe/dsogfowL+vLrVdT2OWWyyHB1Y4XXFWGs=&quot;:{&quot;name&quot;:&quot;8oMNOGWYYe/dsogfowL+vLrVdT2OWWyyHB1Y4XXFWGs=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;5Y4IJPI7uUCy1YULC6LFen:100.00:5&quot;,&quot;secondary_exposures&quot;:[]},&quot;5pIFK+PVeOj47PIVY1YpQZ0n1VhUv3AFhxF9FK3/5NU=&quot;:{&quot;name&quot;:&quot;5pIFK+PVeOj47PIVY1YpQZ0n1VhUv3AFhxF9FK3/5NU=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;6OJTHBQc1p2d9F2Cu8oreT&quot;,&quot;secondary_exposures&quot;:[]},&quot;LOBx6XjXdHGh1Mc2TWG0lUBfYWbMOp15iStJG887/pg=&quot;:{&quot;name&quot;:&quot;LOBx6XjXdHGh1Mc2TWG0lUBfYWbMOp15iStJG887/pg=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;4zP2VmZCT30vnojyK7Ux7G&quot;,&quot;secondary_exposures&quot;:[]},&quot;9Lzv3HXsA+tV2fDclVY4TYl02XNXPEq7XGg6nPEUQy8=&quot;:{&quot;name&quot;:&quot;9Lzv3HXsA+tV2fDclVY4TYl02XNXPEq7XGg6nPEUQy8=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;3ojdCCkK8PWtJ7BzgOAKxb:100.00:7&quot;,&quot;secondary_exposures&quot;:[]},&quot;qwBI7cEFi2p5uofmngMNq9hyeXBei5HjbZBPsE2jVNk=&quot;:{&quot;name&quot;:&quot;qwBI7cEFi2p5uofmngMNq9hyeXBei5HjbZBPsE2jVNk=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;disabled&quot;,&quot;secondary_exposures&quot;:[]},&quot;kaIOlI6Nq9Q/ie+EQ0pIStIilIP0OEzSTA39Jp+4KjQ=&quot;:{&quot;name&quot;:&quot;kaIOlI6Nq9Q/ie+EQ0pIStIilIP0OEzSTA39Jp+4KjQ=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;6maJdrkIkMO9tixmJTk0G0:0.00:7&quot;,&quot;secondary_exposures&quot;:[]},&quot;1Kas5SxzFq1TyEEK/rwk9T2BTRF97IopQx0dxEZEiV4=&quot;:{&quot;name&quot;:&quot;1Kas5SxzFq1TyEEK/rwk9T2BTRF97IopQx0dxEZEiV4=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;tigS7wRgfdnA9rANU7fnb:100.00:4&quot;,&quot;secondary_exposures&quot;:[]},&quot;JXxUskpxyJf0HzDZZzk+rnqpDJoD/uHhmIBaeZ2rf2I=&quot;:{&quot;name&quot;:&quot;JXxUskpxyJf0HzDZZzk+rnqpDJoD/uHhmIBaeZ2rf2I=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;tGWEp1ekGCD5QuqN7IYlGfZ+o0Bp3gDLnODVnfQtzzk=&quot;:{&quot;name&quot;:&quot;tGWEp1ekGCD5QuqN7IYlGfZ+o0Bp3gDLnODVnfQtzzk=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;dZwrFziiqNuYnGDLDpHI1YhPjKifwSg45KCaURl8D2g=&quot;:{&quot;name&quot;:&quot;dZwrFziiqNuYnGDLDpHI1YhPjKifwSg45KCaURl8D2g=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;5oqKa0aj5UNvdxSpZX8AlS:100.00:4&quot;,&quot;secondary_exposures&quot;:[]},&quot;S3UH97cX9/DCJeeuSb/1cxTJ7CCdGRdLv4pASFeUrlQ=&quot;:{&quot;name&quot;:&quot;S3UH97cX9/DCJeeuSb/1cxTJ7CCdGRdLv4pASFeUrlQ=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;6T2E3PXK7ZgV0AI8Yb8CTg:100.00:3&quot;,&quot;secondary_exposures&quot;:[]},&quot;oEth0GQmlQEb4LYJYa0d+c3HKD3ULkpBbWmsOKI9iAY=&quot;:{&quot;name&quot;:&quot;oEth0GQmlQEb4LYJYa0d+c3HKD3ULkpBbWmsOKI9iAY=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;xopiPniokR0nK50Zusg9JVnovSEk5Ehp9FNP10Oe3yY=&quot;:{&quot;name&quot;:&quot;xopiPniokR0nK50Zusg9JVnovSEk5Ehp9FNP10Oe3yY=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;7MdplwWXczC2R4dqgyJgbH:100.00:12&quot;,&quot;secondary_exposures&quot;:[]},&quot;s1IkcDWaLdG1fVzmrKfXCHT56fJwoMRLaOXYYJs0NVQ=&quot;:{&quot;name&quot;:&quot;s1IkcDWaLdG1fVzmrKfXCHT56fJwoMRLaOXYYJs0NVQ=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;2QXHGEeqxigUejcfB7j7nL:100.00:4&quot;,&quot;secondary_exposures&quot;:[]},&quot;/z5rny/vN8rnsI2gxYCgnqQOFiwY847T4QIeZ6w5I34=&quot;:{&quot;name&quot;:&quot;/z5rny/vN8rnsI2gxYCgnqQOFiwY847T4QIeZ6w5I34=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;72G1Fy8i0ruKbdhdWPRBZP:100.00:2&quot;,&quot;secondary_exposures&quot;:[]},&quot;mr25pqFgU5sjnQPrcAz4M3IDWfqYT8r2hMqgjZsP0ho=&quot;:{&quot;name&quot;:&quot;mr25pqFgU5sjnQPrcAz4M3IDWfqYT8r2hMqgjZsP0ho=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;eYRhaR917Kl8W9yQ5U6MBqXj8vPkIthFhiNmuNeAN78=&quot;:{&quot;name&quot;:&quot;eYRhaR917Kl8W9yQ5U6MBqXj8vPkIthFhiNmuNeAN78=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;4kR1aQEEAXj3idg9ag32tm&quot;,&quot;secondary_exposures&quot;:[]},&quot;DZW4Lt9/4nTqMYcoG7AAN7TQCRwpJ94xFJ+gE1GO2AQ=&quot;:{&quot;name&quot;:&quot;DZW4Lt9/4nTqMYcoG7AAN7TQCRwpJ94xFJ+gE1GO2AQ=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;5WNUJdLsoeZGx7rG7Ku5vN&quot;,&quot;secondary_exposures&quot;:[]},&quot;I6aCKEIKc6Arq7OqoqijPw7efTjUjYkQrD6nNhdEUwo=&quot;:{&quot;name&quot;:&quot;I6aCKEIKc6Arq7OqoqijPw7efTjUjYkQrD6nNhdEUwo=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;12KBV7ZGIPESGYEd9f1J6j&quot;,&quot;secondary_exposures&quot;:[]},&quot;znSGofNSewV4L1nPnkUNOmgEJsZN01R3WQN2oIXOng0=&quot;:{&quot;name&quot;:&quot;znSGofNSewV4L1nPnkUNOmgEJsZN01R3WQN2oIXOng0=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;3pdsiYgVcKttxCHUYipiFj:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;eKZ9sLSo6+sicIvD6P1KSh2FCMctkVM3veR39Usebi0=&quot;:{&quot;name&quot;:&quot;eKZ9sLSo6+sicIvD6P1KSh2FCMctkVM3veR39Usebi0=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;Sn9PmHzqK5EWutYoUW7WM&quot;,&quot;secondary_exposures&quot;:[]},&quot;ReTHz5O++2bhIDWL5iofoqpgFh3DS7gFBY5lndMX0a4=&quot;:{&quot;name&quot;:&quot;ReTHz5O++2bhIDWL5iofoqpgFh3DS7gFBY5lndMX0a4=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[{&quot;gate&quot;:&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;6DYH2z0Gemp9SGVuRNM04B&quot;}]},&quot;p97Dq+fIx/w3/EkGTzaK1w3GxAKb2UiB7DMgeXVqPaw=&quot;:{&quot;name&quot;:&quot;p97Dq+fIx/w3/EkGTzaK1w3GxAKb2UiB7DMgeXVqPaw=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;2fAtq6siUQJKXEYjpkbIDr:100.00:16&quot;,&quot;secondary_exposures&quot;:[]},&quot;W0wgK3N2DKRw7mHe/OXWveRF5zny0tvm+vG0KHiLp/Q=&quot;:{&quot;name&quot;:&quot;W0wgK3N2DKRw7mHe/OXWveRF5zny0tvm+vG0KHiLp/Q=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;RTjXBMHnjTqFdoDyXUO2AKPkqYypcAKcmM0zGDh4caY=&quot;:{&quot;name&quot;:&quot;RTjXBMHnjTqFdoDyXUO2AKPkqYypcAKcmM0zGDh4caY=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;z0Bcstj2RryBavzQoKM3ahOCQcI8zFyYwMLgeOJj6ho=&quot;:{&quot;name&quot;:&quot;z0Bcstj2RryBavzQoKM3ahOCQcI8zFyYwMLgeOJj6ho=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;38p24hiNcPdhhQn9FNatCa:100.00:3&quot;,&quot;secondary_exposures&quot;:[]},&quot;4ZJ7EGzGqv4xuN2dyPyGVzeXC3ZzxnWvJ6WajoEnM98=&quot;:{&quot;name&quot;:&quot;4ZJ7EGzGqv4xuN2dyPyGVzeXC3ZzxnWvJ6WajoEnM98=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[{&quot;gate&quot;:&quot;bGEr/UdvFcFW14ci0vi3Lr6wv+5sFlh9fyUkQiM3mo8=&quot;,&quot;gateValue&quot;:&quot;false&quot;,&quot;ruleID&quot;:&quot;6DYH2z0Gemp9SGVuRNM04B&quot;}]},&quot;e+VmFrHp4Yr8GXYWjDQHdWz2PclHlzv9quqbIMU/Xu0=&quot;:{&quot;name&quot;:&quot;e+VmFrHp4Yr8GXYWjDQHdWz2PclHlzv9quqbIMU/Xu0=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;disabled&quot;,&quot;secondary_exposures&quot;:[]},&quot;pJfUbXSMy3I5/YgFlhkcdg6l873+JjkE05INAUxLmUI=&quot;:{&quot;name&quot;:&quot;pJfUbXSMy3I5/YgFlhkcdg6l873+JjkE05INAUxLmUI=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;1GRc7C3ubfuHAZdcrFTPID&quot;,&quot;secondary_exposures&quot;:[]},&quot;p2Vh8R1nnPDbUmB2laIvAo+ftmfycxaj1wj+1VbZyLg=&quot;:{&quot;name&quot;:&quot;p2Vh8R1nnPDbUmB2laIvAo+ftmfycxaj1wj+1VbZyLg=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;5db3Rj2yuMYqBFwmuxU9Yw:100.00:2&quot;,&quot;secondary_exposures&quot;:[]},&quot;ca/pVHa3/6Sxei+4H7EgEWxytJZtjYaWd4gIcLS9BNk=&quot;:{&quot;name&quot;:&quot;ca/pVHa3/6Sxei+4H7EgEWxytJZtjYaWd4gIcLS9BNk=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;3AOavQFFZQPhBgYu4UUpkZ:100.00:3&quot;,&quot;secondary_exposures&quot;:[]},&quot;5FDeSfKIJLemkdT7BTuxj/qoLWYEBfG9UQBPghck3ZA=&quot;:{&quot;name&quot;:&quot;5FDeSfKIJLemkdT7BTuxj/qoLWYEBfG9UQBPghck3ZA=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;2mFWFBDczFBSS3n0wqYfge&quot;,&quot;secondary_exposures&quot;:[]},&quot;i5RceAnwNYDnFUmn6Nr7tYoU2zgb6WZMXFAm/Ks3EJI=&quot;:{&quot;name&quot;:&quot;i5RceAnwNYDnFUmn6Nr7tYoU2zgb6WZMXFAm/Ks3EJI=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;ONGbaY8NwLZsAON1rFnvSZpSx/C2YgSvAaKP+Qs3sy0=&quot;:{&quot;name&quot;:&quot;ONGbaY8NwLZsAON1rFnvSZpSx/C2YgSvAaKP+Qs3sy0=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;4XwqI1y8iet2NIcDO2TzoN:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;KmttvwfoYQsBfGx+YR6WvNYQXoRwaQ+hKZS5+DHpXLk=&quot;:{&quot;name&quot;:&quot;KmttvwfoYQsBfGx+YR6WvNYQXoRwaQ+hKZS5+DHpXLk=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;6aWA9ZaF7ZgPePjBFJwljv:0.00:2&quot;,&quot;secondary_exposures&quot;:[]},&quot;4zIwhZkCZ+GlQOns3JIYBz0/OVfdZ3Y1uk/5+7mf+2A=&quot;:{&quot;name&quot;:&quot;4zIwhZkCZ+GlQOns3JIYBz0/OVfdZ3Y1uk/5+7mf+2A=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;YTgvz2H2yS7kYnVdz+7EJIUOPBCJhECNTPAhmUOoe68=&quot;:{&quot;name&quot;:&quot;YTgvz2H2yS7kYnVdz+7EJIUOPBCJhECNTPAhmUOoe68=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;6qQhRaDxbTEJjpU4n58483:0.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;NP6mAIrpTB9kRjtJnW3FmZTpNpH4UMQimwJqY9Sec+k=&quot;:{&quot;name&quot;:&quot;NP6mAIrpTB9kRjtJnW3FmZTpNpH4UMQimwJqY9Sec+k=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;eYmgBZ7+8Grb61FIjGTNd9D3G+r/jczTEkvC5rm19Tk=&quot;:{&quot;name&quot;:&quot;eYmgBZ7+8Grb61FIjGTNd9D3G+r/jczTEkvC5rm19Tk=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;6FYOdbsE7s06H1VFraZMFX:0.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;1yPpEBxQzs5EQ8FAvcACSinRq2S2J2069sPRZVRmmxE=&quot;:{&quot;name&quot;:&quot;1yPpEBxQzs5EQ8FAvcACSinRq2S2J2069sPRZVRmmxE=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;1hZJGH6G2ILkfSYj80TPYm:100.00:8&quot;,&quot;secondary_exposures&quot;:[]},&quot;pJu6WGBlTFWiqPzNCkQSRb8W05i8Lzy2Nfh+m51MAZM=&quot;:{&quot;name&quot;:&quot;pJu6WGBlTFWiqPzNCkQSRb8W05i8Lzy2Nfh+m51MAZM=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;2kPXMpEwdSSGQMZdT9GpFY:100.00:6&quot;,&quot;secondary_exposures&quot;:[]},&quot;EmL/07sZTmi9xV+epHzdYP8GGRzf/PzE1igH51TIYGQ=&quot;:{&quot;name&quot;:&quot;EmL/07sZTmi9xV+epHzdYP8GGRzf/PzE1igH51TIYGQ=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;disabled&quot;,&quot;secondary_exposures&quot;:[]},&quot;CY7M9UIqsstwHXkY2gh+1iwe+xn/L400EHoMCr5V2Kk=&quot;:{&quot;name&quot;:&quot;CY7M9UIqsstwHXkY2gh+1iwe+xn/L400EHoMCr5V2Kk=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;5XLIOT3TX44LNErmtvgNEI:100.00:3&quot;,&quot;secondary_exposures&quot;:[]},&quot;JSUE/tzFGqA8SW6UZelJxRWNmjDOVW6AacN+s8q2058=&quot;:{&quot;name&quot;:&quot;JSUE/tzFGqA8SW6UZelJxRWNmjDOVW6AacN+s8q2058=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;32BFRMcGqnmbQXA5Bu3NCU:100.00:2&quot;,&quot;secondary_exposures&quot;:[]},&quot;eDXaquyPVYoFNZ+HLRFOqPbAk7N1nlRiJhbhe4g83Es=&quot;:{&quot;name&quot;:&quot;eDXaquyPVYoFNZ+HLRFOqPbAk7N1nlRiJhbhe4g83Es=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;zTjP0wu4jQu1N5tp1E0KqrsQoD7VvYN4Qrege5SFXd0=&quot;:{&quot;name&quot;:&quot;zTjP0wu4jQu1N5tp1E0KqrsQoD7VvYN4Qrege5SFXd0=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;7paL5oTr3GqYyyQ6oIF7eh:100.00:7&quot;,&quot;secondary_exposures&quot;:[]},&quot;tOlureLazS6/pYwbqdKmud6Bvaf9nA4m71Uoyrhnjxo=&quot;:{&quot;name&quot;:&quot;tOlureLazS6/pYwbqdKmud6Bvaf9nA4m71Uoyrhnjxo=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;0z+EonM/Ze0RUt4FnVPK9NO8zbPrdKWPIV/2nsroWAM=&quot;:{&quot;name&quot;:&quot;0z+EonM/Ze0RUt4FnVPK9NO8zbPrdKWPIV/2nsroWAM=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;6XSGGtj4HmnksUh3z9Yzvo:100.00:4&quot;,&quot;secondary_exposures&quot;:[]},&quot;wV9d2LzLij/UwbGC8MXX+RHNBZ5d/rww134rq+krlJQ=&quot;:{&quot;name&quot;:&quot;wV9d2LzLij/UwbGC8MXX+RHNBZ5d/rww134rq+krlJQ=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;6KqmYBA0CTqtf5qM55WRei:100.00:2&quot;,&quot;secondary_exposures&quot;:[]},&quot;bsLlc2kcOlK5RWQ59v0AEAUf4ihEq1EqzVL0STw1ipU=&quot;:{&quot;name&quot;:&quot;bsLlc2kcOlK5RWQ59v0AEAUf4ihEq1EqzVL0STw1ipU=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;gok0DFmTbYmfgm71+6/UBa9YMdK9fta9tVCYCvw0mUk=&quot;:{&quot;name&quot;:&quot;gok0DFmTbYmfgm71+6/UBa9YMdK9fta9tVCYCvw0mUk=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;6DrHnMVtw8sNwJ5LUmKPLX&quot;,&quot;secondary_exposures&quot;:[]},&quot;w2/bDgmUb6OwHuhtN+Wm89zclNO2xRBG8xtJr4UsBbM=&quot;:{&quot;name&quot;:&quot;w2/bDgmUb6OwHuhtN+Wm89zclNO2xRBG8xtJr4UsBbM=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;33a1CT6pcQxQNJcK6V9hr2&quot;,&quot;secondary_exposures&quot;:[]},&quot;7xZWAYfVqaEy7CXa1ckZo3xjvoaWoIOdhw+qc8M1IKQ=&quot;:{&quot;name&quot;:&quot;7xZWAYfVqaEy7CXa1ckZo3xjvoaWoIOdhw+qc8M1IKQ=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;NaOvW/FyxHGGW+okX5dXeUZcodQswSRaUy5pwYMQCY0=&quot;:{&quot;name&quot;:&quot;NaOvW/FyxHGGW+okX5dXeUZcodQswSRaUy5pwYMQCY0=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;taTnYyyHDohIACH0XOt7f9rsbQDo8eDaAR5/12UVIeQ=&quot;:{&quot;name&quot;:&quot;taTnYyyHDohIACH0XOt7f9rsbQDo8eDaAR5/12UVIeQ=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;62l6FrG4x1A1uszltnpcAG&quot;,&quot;secondary_exposures&quot;:[]},&quot;tcmGcYpBS2ChBOHZ0EWBvqwozC4S2fVByvq+/Nu+8qk=&quot;:{&quot;name&quot;:&quot;tcmGcYpBS2ChBOHZ0EWBvqwozC4S2fVByvq+/Nu+8qk=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;CjOPUxQfd2e9T/jCfK5kLFZtS+YknIrp9TbZsxBJ3n4=&quot;:{&quot;name&quot;:&quot;CjOPUxQfd2e9T/jCfK5kLFZtS+YknIrp9TbZsxBJ3n4=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;5RvIFSPqVidVKcu6J4M7SS:100.00:2&quot;,&quot;secondary_exposures&quot;:[]},&quot;+j+2BnaQSkzkNe0dpNHl103pbsRtVlBy3Ivqpwb7bho=&quot;:{&quot;name&quot;:&quot;+j+2BnaQSkzkNe0dpNHl103pbsRtVlBy3Ivqpwb7bho=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;1U8GcaH799WWPvfleBj0Jd:0.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;P7vOA+qkoiRS/9UWXIUHxm+CI0lSj7WY2ZBiK9KyND4=&quot;:{&quot;name&quot;:&quot;P7vOA+qkoiRS/9UWXIUHxm+CI0lSj7WY2ZBiK9KyND4=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;disabled&quot;,&quot;secondary_exposures&quot;:[]},&quot;qriyvYyof2e0nw26zR6JThjy67bKClLhvHTizM7yDcg=&quot;:{&quot;name&quot;:&quot;qriyvYyof2e0nw26zR6JThjy67bKClLhvHTizM7yDcg=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;default&quot;,&quot;secondary_exposures&quot;:[]},&quot;EA6pIl34ynZu2fCXtDsf5N+8HjgmFW1iWFEJidJmjwE=&quot;:{&quot;name&quot;:&quot;EA6pIl34ynZu2fCXtDsf5N+8HjgmFW1iWFEJidJmjwE=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;disabled&quot;,&quot;secondary_exposures&quot;:[]},&quot;JCIMc2jHTforX4kLxzXeocMmrYb+LnAgwZU0w3bCzQY=&quot;:{&quot;name&quot;:&quot;JCIMc2jHTforX4kLxzXeocMmrYb+LnAgwZU0w3bCzQY=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;disabled&quot;,&quot;secondary_exposures&quot;:[]},&quot;xdTyVT3ZuBSNWCl2NPxJ8eZ0ifhUzatwezSwUElWFy0=&quot;:{&quot;name&quot;:&quot;xdTyVT3ZuBSNWCl2NPxJ8eZ0ifhUzatwezSwUElWFy0=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;disabled&quot;,&quot;secondary_exposures&quot;:[]},&quot;/zPeDB00QSmJg02UNPvvY6N+w7bL9XbOTmOZn0UHdA0=&quot;:{&quot;name&quot;:&quot;/zPeDB00QSmJg02UNPvvY6N+w7bL9XbOTmOZn0UHdA0=&quot;,&quot;value&quot;:false,&quot;rule_id&quot;:&quot;disabled&quot;,&quot;secondary_exposures&quot;:[]},&quot;p8RKstqTUsFv0yM8P1EiWUksDkzfBxAw5OAvX/lo29w=&quot;:{&quot;name&quot;:&quot;p8RKstqTUsFv0yM8P1EiWUksDkzfBxAw5OAvX/lo29w=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;6OcWkXZuFdfUXaKzXh2Nef:100.00:1&quot;,&quot;secondary_exposures&quot;:[]},&quot;Pesmw2FSIduSR93sJEVAEAHyJZ4MQP9Pbn1gPgXxcXw=&quot;:{&quot;name&quot;:&quot;Pesmw2FSIduSR93sJEVAEAHyJZ4MQP9Pbn1gPgXxcXw=&quot;,&quot;value&quot;:true,&quot;rule_id&quot;:&quot;disabled&quot;,&quot;secondary_exposures&quot;:[]}},&quot;dynamic_configs&quot;:{&quot;VOzslvMzaTnCGxc9ChXSHQXrzoC/W3HKLJGPUflr1O8=&quot;:{&quot;name&quot;:&quot;VOzslvMzaTnCGxc9ChXSHQXrzoC/W3HKLJGPUflr1O8=&quot;,&quot;value&quot;:{&quot;field1&quot;:&quot;value1&quot;,&quot;field2&quot;:&quot;value2 changed&quot;},&quot;group&quot;:&quot;default&quot;,&quot;rule_id&quot;:&quot;default&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;VbvmIh0o/WPQ9s5PslnmpJTfwuWrf5uT6PAQHQ6QP1Q=&quot;:{&quot;name&quot;:&quot;VbvmIh0o/WPQ9s5PslnmpJTfwuWrf5uT6PAQHQ6QP1Q=&quot;,&quot;value&quot;:{&quot;contentURL&quot;:&quot;https://s3.amazonaws.com/webflow-dev-assets/66b3c8b0005c1a3b3492e8fb%2Fcontent.json&quot;},&quot;group&quot;:&quot;4hbT4fg2lW0gpsgDSUkfnE&quot;,&quot;rule_id&quot;:&quot;4hbT4fg2lW0gpsgDSUkfnE&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;N4nepjmrPeqzA/+0tgNI02CsWSts8ZMU8JD0XIWjlKs=&quot;:{&quot;name&quot;:&quot;N4nepjmrPeqzA/+0tgNI02CsWSts8ZMU8JD0XIWjlKs=&quot;,&quot;value&quot;:{&quot;cancelId&quot;:&quot;&quot;},&quot;group&quot;:&quot;default&quot;,&quot;rule_id&quot;:&quot;default&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;bKAcaThH+yCo188IQrLBVQm7ZVHiGXE+GIrnig1XATs=&quot;:{&quot;name&quot;:&quot;bKAcaThH+yCo188IQrLBVQm7ZVHiGXE+GIrnig1XATs=&quot;,&quot;value&quot;:{&quot;concurrencyLimit&quot;:5,&quot;concurrencyLimitVariants&quot;:1,&quot;batchSize&quot;:50},&quot;group&quot;:&quot;1GvE2ByNdIwDAl4XiF6gAK&quot;,&quot;rule_id&quot;:&quot;1GvE2ByNdIwDAl4XiF6gAK&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;GsC+9Ht0eLqZ1Itv+xIUmOwqjOeAeB+SPvPSMDIDLIQ=&quot;:{&quot;name&quot;:&quot;GsC+9Ht0eLqZ1Itv+xIUmOwqjOeAeB+SPvPSMDIDLIQ=&quot;,&quot;value&quot;:{&quot;enabled&quot;:true},&quot;group&quot;:&quot;default&quot;,&quot;rule_id&quot;:&quot;default&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;Oq+ukiCn32odJFJ+G60yDcN8k5FzjE4vBVLTUytArao=&quot;:{&quot;name&quot;:&quot;Oq+ukiCn32odJFJ+G60yDcN8k5FzjE4vBVLTUytArao=&quot;,&quot;value&quot;:{&quot;flags&quot;:[&quot;ff-apai-169-copilot&quot;,&quot;wfa-691-behavioral-analytics&quot;,&quot;ff-imize-integration&quot;]},&quot;group&quot;:&quot;default&quot;,&quot;rule_id&quot;:&quot;default&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;Cncfm09rtvZcTizRCBKfpaRwWy/chrg3cYxyaii9fjA=&quot;:{&quot;name&quot;:&quot;Cncfm09rtvZcTizRCBKfpaRwWy/chrg3cYxyaii9fjA=&quot;,&quot;value&quot;:{&quot;qualifiers&quot;:[&quot;cdnBandwidthLimit&quot;],&quot;anchorDate&quot;:&quot;2024-07-15&quot;,&quot;highUsage&quot;:&quot;550000000000&quot;,&quot;useCubeForPreviousMonthUsage&quot;:false},&quot;group&quot;:&quot;default&quot;,&quot;rule_id&quot;:&quot;default&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;z7lzpDYq5nfwdPMT+jWKpBj8QZv3acBNr4+vtQ9fUlE=&quot;:{&quot;name&quot;:&quot;z7lzpDYq5nfwdPMT+jWKpBj8QZv3acBNr4+vtQ9fUlE=&quot;,&quot;value&quot;:{&quot;cdnUsagePercentage&quot;:-1},&quot;group&quot;:&quot;5zmIpszINEongj5uEsaAbm&quot;,&quot;rule_id&quot;:&quot;5zmIpszINEongj5uEsaAbm&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;LVQMH5aS2Xt7rOUBVCdHQcS1kJ+x1s1Q6kalLh//OJ0=&quot;:{&quot;name&quot;:&quot;LVQMH5aS2Xt7rOUBVCdHQcS1kJ+x1s1Q6kalLh//OJ0=&quot;,&quot;value&quot;:{&quot;applyExistingStyles&quot;:&quot;gpt-4o-2024-05-13&quot;,&quot;applyExistingStylesFineTuned&quot;:&quot;gpt-4o-2024-05-13&quot;,&quot;getToolCall&quot;:&quot;gpt-3.5-turbo-0125&quot;,&quot;modifyHtmlSnippet&quot;:&quot;gpt-3.5-turbo-0125&quot;,&quot;extendStyles&quot;:&quot;gpt-4-turbo-preview&quot;,&quot;getStyleAdditions&quot;:&quot;gpt-3.5-turbo-0125&quot;,&quot;rerankLibrarySection&quot;:&quot;gpt-3.5-turbo&quot;,&quot;summarizeSite&quot;:&quot;gpt-3.5-turbo&quot;,&quot;summarizeHTML&quot;:&quot;gpt-3.5-turbo-1106&quot;,&quot;winnowStyles&quot;:&quot;gpt-3.5-turbo-0125&quot;,&quot;getRequiredStyles&quot;:&quot;gpt-4-turbo-preview&quot;,&quot;copyChanges&quot;:&quot;gpt-4o&quot;},&quot;group&quot;:&quot;default&quot;,&quot;rule_id&quot;:&quot;default&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;vWLqV3Ov/sIqX+Ose2pF2s1IS8JnBBI9cV4HRbUYAj0=&quot;:{&quot;name&quot;:&quot;vWLqV3Ov/sIqX+Ose2pF2s1IS8JnBBI9cV4HRbUYAj0=&quot;,&quot;value&quot;:{&quot;concurrency&quot;:10,&quot;jobConcurrency&quot;:5,&quot;testConcurrency&quot;:5},&quot;group&quot;:&quot;default&quot;,&quot;rule_id&quot;:&quot;default&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;KtqtGmJAcb3wYXGo9fF+CejOVcQnOQ1CJJXG6emPyiw=&quot;:{&quot;name&quot;:&quot;KtqtGmJAcb3wYXGo9fF+CejOVcQnOQ1CJJXG6emPyiw=&quot;,&quot;value&quot;:{&quot;Logger&quot;:false},&quot;group&quot;:&quot;7uBjuMzSrf1kFNLoPxK7RW&quot;,&quot;rule_id&quot;:&quot;7uBjuMzSrf1kFNLoPxK7RW&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;BI8g38RjO9qSIoKsoKXAkzypF/jq0x6CSrMWEHlULbs=&quot;:{&quot;name&quot;:&quot;BI8g38RjO9qSIoKsoKXAkzypF/jq0x6CSrMWEHlULbs=&quot;,&quot;value&quot;:{&quot;openai&quot;:{&quot;gpt-4o-mini&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.00015,&quot;output&quot;:0.0006},&quot;base&quot;:{&quot;input&quot;:0.00015,&quot;output&quot;:0.0006}},&quot;gpt-4o-mini-2024-07-18&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.0003,&quot;output&quot;:0.0012},&quot;base&quot;:{&quot;input&quot;:0.00015,&quot;output&quot;:0.0006}},&quot;gpt-4o&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.005,&quot;output&quot;:0.015},&quot;base&quot;:{&quot;input&quot;:0.005,&quot;output&quot;:0.015}},&quot;gpt-4o-2024-05-13&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.005,&quot;output&quot;:0.015},&quot;base&quot;:{&quot;input&quot;:0.005,&quot;output&quot;:0.015}},&quot;gpt-4o-2024-08-06&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.0025,&quot;output&quot;:0.01},&quot;base&quot;:{&quot;input&quot;:0.0025,&quot;output&quot;:0.01}},&quot;gpt-4-0125-preview&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.01,&quot;output&quot;:0.03},&quot;base&quot;:{&quot;input&quot;:0.01,&quot;output&quot;:0.03}},&quot;gpt-4-1106-preview&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.01,&quot;output&quot;:0.03},&quot;base&quot;:{&quot;input&quot;:0.01,&quot;output&quot;:0.03}},&quot;gpt-4-1106-vision-preview&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.01,&quot;output&quot;:0.03},&quot;base&quot;:{&quot;input&quot;:0.01,&quot;output&quot;:0.03}},&quot;gpt-4-vision-preview&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.01,&quot;output&quot;:0.03},&quot;base&quot;:{&quot;input&quot;:0.01,&quot;output&quot;:0.03}},&quot;gpt-4&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.03,&quot;output&quot;:0.06},&quot;base&quot;:{&quot;input&quot;:0.03,&quot;output&quot;:0.06}},&quot;gpt-4-32k&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.06,&quot;output&quot;:0.12},&quot;base&quot;:{&quot;input&quot;:0.06,&quot;output&quot;:0.12}},&quot;gpt-4-turbo&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.01,&quot;output&quot;:0.03},&quot;base&quot;:{&quot;input&quot;:0.01,&quot;output&quot;:0.03}},&quot;gpt-4-turbo-2024-04-09&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.01,&quot;output&quot;:0.03},&quot;base&quot;:{&quot;input&quot;:0.01,&quot;output&quot;:0.03}},&quot;gpt-3.5-turbo-0125&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.003,&quot;output&quot;:0.006},&quot;base&quot;:{&quot;input&quot;:0.0005,&quot;output&quot;:0.0015}},&quot;gpt-3.5-turbo-instruct&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.003,&quot;output&quot;:0.006},&quot;base&quot;:{&quot;input&quot;:0.0015,&quot;output&quot;:0.002}},&quot;gpt-3.5-turbo-1106&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.003,&quot;output&quot;:0.006},&quot;base&quot;:{&quot;input&quot;:0.001,&quot;output&quot;:0.002}},&quot;gpt-3.5-turbo-0613&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.003,&quot;output&quot;:0.006},&quot;base&quot;:{&quot;input&quot;:0.0015,&quot;output&quot;:0.002}},&quot;gpt-3.5-turbo-16k-0613&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.003,&quot;output&quot;:0.006},&quot;base&quot;:{&quot;input&quot;:0.003,&quot;output&quot;:0.004}},&quot;gpt-3.5-turbo-0301&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.003,&quot;output&quot;:0.006},&quot;base&quot;:{&quot;input&quot;:0.0015,&quot;output&quot;:0.002}},&quot;text-embedding-3-small&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.00002,&quot;output&quot;:0.00002},&quot;base&quot;:{&quot;input&quot;:0.00002,&quot;output&quot;:0.00002}},&quot;text-embedding-3-large&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.00013,&quot;output&quot;:0.00013},&quot;base&quot;:{&quot;input&quot;:0.00013,&quot;output&quot;:0.00013}},&quot;text-embedding-ada-002&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.0001,&quot;output&quot;:0.0001},&quot;base&quot;:{&quot;input&quot;:0.0001,&quot;output&quot;:0.0001}},&quot;da-vinci-002&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.012,&quot;output&quot;:0.012},&quot;base&quot;:{&quot;input&quot;:0.002,&quot;output&quot;:0.002}},&quot;babbage-002&quot;:{&quot;ft&quot;:{&quot;input&quot;:0.0016,&quot;output&quot;:0.0016},&quot;base&quot;:{&quot;input&quot;:0.0004,&quot;output&quot;:0.0004}}}},&quot;group&quot;:&quot;default&quot;,&quot;rule_id&quot;:&quot;default&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;oIkmI84/O3nodhAO/gAbs0zgY2IvPgpH6UlSycbHi/I=&quot;:{&quot;name&quot;:&quot;oIkmI84/O3nodhAO/gAbs0zgY2IvPgpH6UlSycbHi/I=&quot;,&quot;value&quot;:{&quot;Database&quot;:{&quot;TTL&quot;:120,&quot;Method&quot;:&quot;json&quot;}},&quot;group&quot;:&quot;default&quot;,&quot;rule_id&quot;:&quot;default&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;1vaRoS0QlFL+TEUDugDt/1KXdWvhj03Qb9u2ruorsNc=&quot;:{&quot;name&quot;:&quot;1vaRoS0QlFL+TEUDugDt/1KXdWvhj03Qb9u2ruorsNc=&quot;,&quot;value&quot;:{&quot;MAX_NESTED_DYNLISTS_PER_PAGE&quot;:1,&quot;MAX_DYNLISTS_PER_PAGE&quot;:20,&quot;MAX_NESTED_COLLECTION_LIST_LIMIT&quot;:5,&quot;MAX_COLLECTION_LIST_LIMIT&quot;:100},&quot;group&quot;:&quot;default&quot;,&quot;rule_id&quot;:&quot;default&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;CHiQfJJNufnbbHjt7tcZuD9wK6Bl5FwbOUHnSl3avqA=&quot;:{&quot;name&quot;:&quot;CHiQfJJNufnbbHjt7tcZuD9wK6Bl5FwbOUHnSl3avqA=&quot;,&quot;value&quot;:{&quot;libraryMetadata&quot;:{&quot;copilot-library&quot;:{&quot;versionedResourceId&quot;:&quot;66c4bc82c44f7c3bea9aa534&quot;}},&quot;maxConcurrent&quot;:50,&quot;librarySearchOptions&quot;:{&quot;numResults&quot;:100,&quot;weightPower&quot;:10,&quot;rerank&quot;:true,&quot;allowedLibraries&quot;:[&quot;copilot-library&quot;],&quot;allowedVersions&quot;:[&quot;66c4bc82c44f7c3bea9aa534&quot;],&quot;includeOmitted&quot;:&quot;never&quot;},&quot;availableComponentCategories&quot;:[&quot;Hero&quot;,&quot;Features&quot;,&quot;Footer&quot;,&quot;Pricing&quot;,&quot;Gallery&quot;,&quot;CTA&quot;,&quot;Testimonial&quot;,&quot;Content Feed&quot;,&quot;Content Hero&quot;,&quot;Blog Body&quot;,&quot;Banner&quot;,&quot;FAQ&quot;,&quot;Contact&quot;,&quot;Team&quot;,&quot;Logos&quot;,&quot;Career&quot;,&quot;Stats / Metrics&quot;,&quot;Event Header&quot;,&quot;Event Feed&quot;,&quot;404&quot;],&quot;availableIterationCategories&quot;:[&quot;Copy&quot;],&quot;enableQueryByMetadata&quot;:true},&quot;group&quot;:&quot;default&quot;,&quot;rule_id&quot;:&quot;default&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;zRYikcIlbF3Un7C26+4VGO/t8jKwNjjuAdQWLlZECTQ=&quot;:{&quot;name&quot;:&quot;zRYikcIlbF3Un7C26+4VGO/t8jKwNjjuAdQWLlZECTQ=&quot;,&quot;value&quot;:{&quot;env&quot;:&quot;production&quot;},&quot;group&quot;:&quot;5UbDumatBcUWBMfWbj1FNy&quot;,&quot;rule_id&quot;:&quot;5UbDumatBcUWBMfWbj1FNy&quot;,&quot;is_device_based&quot;:true,&quot;secondary_exposures&quot;:[]},&quot;RMv0YJlLOBe7cY7HgZ3Jox34R0Wrk7jLv3DZyBETA7I=&quot;:{&quot;name&quot;:&quot;RMv0YJlLOBe7cY7HgZ3Jox34R0Wrk7jLv3DZyBETA7I=&quot;,&quot;value&quot;:{&quot;fullStoryConsent&quot;:[&quot;flagOne&quot;],&quot;keyboardShortcuts&quot;:{&quot;flagOne&quot;:&quot;* e m e r s o n *&quot;}},&quot;group&quot;:&quot;disabled&quot;,&quot;rule_id&quot;:&quot;disabled&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[]},&quot;Y1yFqiff7zTtWyv39dxg51J53EongWT+yf+IVB4Tk+4=&quot;:{&quot;name&quot;:&quot;Y1yFqiff7zTtWyv39dxg51J53EongWT+yf+IVB4Tk+4=&quot;,&quot;value&quot;:{},&quot;group&quot;:&quot;prestart&quot;,&quot;rule_id&quot;:&quot;prestart&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[],&quot;is_user_in_experiment&quot;:false,&quot;is_experiment_active&quot;:false},&quot;cejRwfDx7S4miJ/yWnK5XLOX5sCcm4MzNWwHr43Xmr8=&quot;:{&quot;name&quot;:&quot;cejRwfDx7S4miJ/yWnK5XLOX5sCcm4MzNWwHr43Xmr8=&quot;,&quot;value&quot;:{&quot;color&quot;:&quot;blue&quot;,&quot;size&quot;:&quot;ex-large&quot;},&quot;group&quot;:&quot;layerAssignment&quot;,&quot;rule_id&quot;:&quot;layerAssignment&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[],&quot;explicit_parameters&quot;:[&quot;size&quot;],&quot;is_user_in_experiment&quot;:false,&quot;is_experiment_active&quot;:true,&quot;is_in_layer&quot;:true},&quot;hZ4C5GJLbNKoAo1aBqi3P13wwynIGPGJMsgEcxmbl10=&quot;:{&quot;name&quot;:&quot;hZ4C5GJLbNKoAo1aBqi3P13wwynIGPGJMsgEcxmbl10=&quot;,&quot;value&quot;:{&quot;color&quot;:&quot;yellow&quot;,&quot;size&quot;:&quot;ex-large&quot;},&quot;group&quot;:&quot;4oqeeNe5OpnCVtbmNq37oB&quot;,&quot;rule_id&quot;:&quot;4oqeeNe5OpnCVtbmNq37oB&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[],&quot;explicit_parameters&quot;:[&quot;color&quot;],&quot;is_user_in_experiment&quot;:true,&quot;is_experiment_active&quot;:true,&quot;is_in_layer&quot;:true},&quot;1AbhVrUKoQuYcjIh58BsAAwiWSSeW5NlDpmCF+18bfE=&quot;:{&quot;name&quot;:&quot;1AbhVrUKoQuYcjIh58BsAAwiWSSeW5NlDpmCF+18bfE=&quot;,&quot;value&quot;:{&quot;enabled&quot;:true,&quot;color&quot;:&quot;blue&quot;},&quot;group&quot;:&quot;layerAssignment&quot;,&quot;rule_id&quot;:&quot;layerAssignment&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[],&quot;explicit_parameters&quot;:[&quot;color&quot;],&quot;is_user_in_experiment&quot;:false,&quot;is_experiment_active&quot;:true,&quot;is_in_layer&quot;:true},&quot;QYI5+5bcxZUvvlVG4JTa2aUTsFRBdQQ57W0Ru7LvzVo=&quot;:{&quot;name&quot;:&quot;QYI5+5bcxZUvvlVG4JTa2aUTsFRBdQQ57W0Ru7LvzVo=&quot;,&quot;value&quot;:{&quot;enabled&quot;:false,&quot;color&quot;:&quot;blue&quot;},&quot;group&quot;:&quot;6qmLACXxRKPLSrrr1H7dkw&quot;,&quot;rule_id&quot;:&quot;6qmLACXxRKPLSrrr1H7dkw&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[],&quot;explicit_parameters&quot;:[&quot;enabled&quot;],&quot;is_user_in_experiment&quot;:true,&quot;is_experiment_active&quot;:true,&quot;is_in_layer&quot;:true},&quot;aXYqHZ7oh9DTaBYvq/qFxDFbxP3biDzlN85J/BQ4RtI=&quot;:{&quot;name&quot;:&quot;aXYqHZ7oh9DTaBYvq/qFxDFbxP3biDzlN85J/BQ4RtI=&quot;,&quot;value&quot;:{},&quot;group&quot;:&quot;prestart&quot;,&quot;rule_id&quot;:&quot;prestart&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[],&quot;is_user_in_experiment&quot;:false,&quot;is_experiment_active&quot;:false},&quot;yoRUQ6BPTNfb9ckyfDP8HMQ2EiauI9+xWB6ArYI2KpA=&quot;:{&quot;name&quot;:&quot;yoRUQ6BPTNfb9ckyfDP8HMQ2EiauI9+xWB6ArYI2KpA=&quot;,&quot;value&quot;:{},&quot;group&quot;:&quot;prestart&quot;,&quot;rule_id&quot;:&quot;prestart&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[],&quot;is_user_in_experiment&quot;:false,&quot;is_experiment_active&quot;:false},&quot;VlWaVYeyTGhnqBlTBGvFxL4xZ68LP76wzFvPWcLyGw4=&quot;:{&quot;name&quot;:&quot;VlWaVYeyTGhnqBlTBGvFxL4xZ68LP76wzFvPWcLyGw4=&quot;,&quot;value&quot;:{},&quot;group&quot;:&quot;prestart&quot;,&quot;rule_id&quot;:&quot;prestart&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[],&quot;is_user_in_experiment&quot;:false,&quot;is_experiment_active&quot;:false},&quot;dXtnG24ejPs2vQQEa6Q3SmBwuKH9lqgDjoJ3NlGh7SU=&quot;:{&quot;name&quot;:&quot;dXtnG24ejPs2vQQEa6Q3SmBwuKH9lqgDjoJ3NlGh7SU=&quot;,&quot;value&quot;:{&quot;variant&quot;:&quot;treatment&quot;},&quot;group&quot;:&quot;5Mu86Uq4mCmRQ6qoAhrnjj&quot;,&quot;rule_id&quot;:&quot;5Mu86Uq4mCmRQ6qoAhrnjj&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[],&quot;is_user_in_experiment&quot;:true,&quot;is_experiment_active&quot;:true},&quot;NWXdQI9nQn/NInK3619JskfpoNXp6hYrp4cTAwn751Q=&quot;:{&quot;name&quot;:&quot;NWXdQI9nQn/NInK3619JskfpoNXp6hYrp4cTAwn751Q=&quot;,&quot;value&quot;:{&quot;Enabled&quot;:false},&quot;group&quot;:&quot;5VEWqLbJdQQMF3tjK5fil1&quot;,&quot;rule_id&quot;:&quot;5VEWqLbJdQQMF3tjK5fil1&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[{&quot;gate&quot;:&quot;uthms6h0ea3uDcfvLmyhYIuWUj/ZjEobjCucOB0hLQY=&quot;,&quot;gateValue&quot;:&quot;true&quot;,&quot;ruleID&quot;:&quot;3MClV6ERIlJKSDEUmOR7AS:100.00:6&quot;}],&quot;is_user_in_experiment&quot;:true,&quot;is_experiment_active&quot;:true}},&quot;layer_configs&quot;:{&quot;/VGzlCHnNoiBUJI/LFiEIAd3EbAMEiVYtxn3Ldx7vto=&quot;:{&quot;name&quot;:&quot;/VGzlCHnNoiBUJI/LFiEIAd3EbAMEiVYtxn3Ldx7vto=&quot;,&quot;value&quot;:{&quot;color&quot;:&quot;yellow&quot;,&quot;size&quot;:&quot;ex-large&quot;},&quot;group&quot;:&quot;4oqeeNe5OpnCVtbmNq37oB&quot;,&quot;rule_id&quot;:&quot;4oqeeNe5OpnCVtbmNq37oB&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[],&quot;explicit_parameters&quot;:[&quot;color&quot;],&quot;allocated_experiment_name&quot;:&quot;hZ4C5GJLbNKoAo1aBqi3P13wwynIGPGJMsgEcxmbl10=&quot;,&quot;is_experiment_active&quot;:true,&quot;is_user_in_experiment&quot;:true,&quot;undelegated_secondary_exposures&quot;:[]},&quot;mcEBqjaBqjN/MeWp4o8EK7PtuZ7Xrgc02NoT+7k5a1w=&quot;:{&quot;name&quot;:&quot;mcEBqjaBqjN/MeWp4o8EK7PtuZ7Xrgc02NoT+7k5a1w=&quot;,&quot;value&quot;:{&quot;enabled&quot;:false,&quot;color&quot;:&quot;blue&quot;},&quot;group&quot;:&quot;6qmLACXxRKPLSrrr1H7dkw&quot;,&quot;rule_id&quot;:&quot;6qmLACXxRKPLSrrr1H7dkw&quot;,&quot;is_device_based&quot;:false,&quot;secondary_exposures&quot;:[],&quot;explicit_parameters&quot;:[&quot;enabled&quot;],&quot;allocated_experiment_name&quot;:&quot;QYI5+5bcxZUvvlVG4JTa2aUTsFRBdQQ57W0Ru7LvzVo=&quot;,&quot;is_experiment_active&quot;:true,&quot;is_user_in_experiment&quot;:true,&quot;undelegated_secondary_exposures&quot;:[]}},&quot;sdkParams&quot;:{},&quot;has_updates&quot;:true,&quot;generator&quot;:&quot;statsig-node-sdk&quot;,&quot;sdkInfo&quot;:{&quot;sdkType&quot;:&quot;statsig-node&quot;,&quot;sdkVersion&quot;:&quot;5.26.0&quot;},&quot;time&quot;:1726616919818,&quot;evaluated_keys&quot;:{&quot;userID&quot;:&quot;unauthenticated-users&quot;,&quot;customIDs&quot;:{&quot;stableID&quot;:&quot;107e3efd-12d7-4afe-bbe6-3ed932ead305&quot;,&quot;anonymousId&quot;:&quot;107e3efd-12d7-4afe-bbe6-3ed932ead305&quot;,&quot;siteId&quot;:&quot;66baccb64bf2f5f5a69ec8bf&quot;}},&quot;hash_used&quot;:&quot;sha256&quot;,&quot;user&quot;:{&quot;userID&quot;:&quot;unauthenticated-users&quot;,&quot;userAgent&quot;:&quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36&quot;,&quot;ip&quot;:&quot;103.164.255.254&quot;,&quot;custom&quot;:{&quot;app&quot;:&quot;preview&quot;,&quot;path&quot;:&quot;/&quot;,&quot;pathWithParams&quot;:&quot;/&quot;,&quot;siteCreated&quot;:&quot;1723518134466&quot;,&quot;siteShortName&quot;:&quot;corpex-template&quot;,&quot;userVerified&quot;:&quot;false&quot;,&quot;isOveragesEnabled&quot;:&quot;false&quot;},&quot;customIDs&quot;:{&quot;stableID&quot;:&quot;107e3efd-12d7-4afe-bbe6-3ed932ead305&quot;,&quot;anonymousId&quot;:&quot;107e3efd-12d7-4afe-bbe6-3ed932ead305&quot;,&quot;siteId&quot;:&quot;66baccb64bf2f5f5a69ec8bf&quot;},&quot;statsigEnvironment&quot;:{&quot;tier&quot;:&quot;production&quot;}}}},&quot;isInBeta&quot;:true,&quot;configTest&quot;:&quot;production&quot;,&quot;initialFeatureFlags&quot;:{&quot;d2&quot;:true}}
+    </script>
+    <script type="text/javascript">
+      function htmlDecode(input) {
+        var doc = new DOMParser().parseFromString(input, "text/html");
+        return doc.documentElement.textContent;
+      }
+      var initialDataEl = document.getElementById("wf-initial-data");
+      var initialData = {};
+      try {
+        initialData = JSON.parse(htmlDecode(initialDataEl.innerHTML));
+      } catch (e) {
+        console.log("Failed to parse initial data");
+      }
+      window.webflowInitialData = initialData;
+      window.datadogRumConfig = {
+        applicationId: "f3c57749-9e82-4d88-becf-68d52740251a",
+        clientToken: "pub169e3de286f8f5a3a10c221c89a167d3",
+        sampleRate: 10,
+        replaySampleRate: 0,
+        env: "prod",
+        version: "dev-7206d2474e8003903bf282b218bb79767a9966c6",
+        allowedTracingOrigins: [
+          "https://webflow.com",
+          "http://webflow.com",
+          "https://www.webflow.com",
+        ],
+      };
+      window.fullstoryConfig = { orgId: "2Z5NT", isEnabled: false };
+      window.knockPublicApiKey = null;
+      window.exploConfig = {};
+    </script>
+    <script
+      type="text/javascript"
+      src="https://d3e54v103j8qbb.cloudfront.net/gen/js/webflow-designer.063e2dc45c0f711046b8.js"
+      crossorigin="anonymous"
+    ></script>
+    <script type="text/javascript">
+      window.performance &&
+        typeof performance.mark === "function" &&
+        performance.mark("end js:execute-app");
+    </script>
+    <script>
+      window.consentManagerConfig = function (exports) {
+        var React = exports.React;
+        var bannerContent = React.createElement(
+          "span",
+          null,
+          "We use cookies (and other similar technologies) to improve your experience on our site. By using this website you agree to our",
+          " ",
+          React.createElement(
+            "a",
+            { href: "/legal/cookie-policy", target: "_blank" },
+            "Cookie Policy"
+          ),
+          "."
+        );
+        var preferencesDialogTitle = "Cookie Preferences";
+        var preferencesDialogContent =
+          "We use data collected by cookies and JavaScript libraries to improve the functionality of the Webflow Dashboard, deliver personalized advertisements, and increase the overall performance of our service.";
+        var cancelDialogTitle = "Are you sure you want to cancel?";
+        var cancelDialogContent = React.createElement(
+          "span",
+          null,
+          "Your preferences have not been saved. By continuing to use our website, you՚re agreeing to our",
+          " ",
+          React.createElement(
+            "a",
+            { href: "/legal/cookie-policy", target: "_blank" },
+            "Cookie Policy"
+          ),
+          "."
+        );
+        var defaultDestinationBehavior = "imply";
+
+        return {
+          container: "#consent-container",
+          writeKey: "f28KeHZ0I4kQbVZw6U8fqkBHQ5PyOMs0",
+          cdnHost: "analytics.webflow.com",
+          shouldRequireConsent: async function () {
+            try {
+              const inEu = exports.inEU();
+              let isAuth;
+
+              if (inEu) {
+                isAuth = await isAuthenticated();
+              }
+
+              // if in EU and not authenticated, require consent
+              return inEu && !isAuth;
+            } catch (e) {
+              return true;
+            }
+          },
+          bannerContent: bannerContent,
+          preferencesDialogTitle: preferencesDialogTitle,
+          preferencesDialogContent: preferencesDialogContent,
+          cancelDialogTitle: cancelDialogTitle,
+          cancelDialogContent: cancelDialogContent,
+          defaultDestinationBehavior: defaultDestinationBehavior,
+          onError: function (err) {
+            console.error("SegmentConsentManager", err);
+          },
+          closeBehavior: function (categories) {
+            return categories; // This sets them to the default value
+          },
+        };
+      };
+
+      var body = document.getElementsByTagName("body")[0];
+      var consentScript = document.createElement("script");
+      consentScript.setAttribute(
+        "src",
+        "https://unpkg.com/@segment/consent-manager@4.5.1/standalone/consent-manager.js"
+      );
+      consentScript.setAttribute(
+        "integrity",
+        "sha384-6m1+pfvSflZ20rCXvmOQ340ZQ4K4peogarq/HMfzcCXyB6ngUjpm3PuCGwvQy87Y"
+      );
+      consentScript.setAttribute("crossorigin", "anonymous");
+      consentScript.setAttribute("defer", "defer");
+      body.appendChild(consentScript);
+    </script>
+    <div id="consent-container"></div>
+    <script type="text/javascript">
+      window._hostUrl = "https://webflow.com";
+    </script>
+    <script type="text/javascript">
+      async function isAuthenticated() {
+        try {
+          let response = await fetch(
+            `${window._hostUrl}/api/user/readOnlyData`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json;charset=UTF-8",
+              },
+              credentials: "include",
+            }
+          );
+          return response.status === 200;
+        } catch (error) {
+          console.error("Error during authentication:", error);
+          return false;
+        }
+      }
+    </script>
+    <script type="text/javascript">
+      (function () {
+        var isLoggedIn = "true" === "false";
+
+        ////////////////////////////////////////////////////////////////////////////////
+        // code shared between both logged in and logged out states
+
+        function getFirstTouchCookie(firstTouchCookieKey) {
+          if (!firstTouchCookieKey) return;
+          return document.cookie.split(";").find(function (item) {
+            return item.trim().indexOf(firstTouchCookieKey + "=") === 0;
+          });
+        }
+
+        function setFirstTouchCookie(firstTouchCookieKey, firstTouchParams) {
+          var expireDate = new Date();
+          var domain;
+
+          try {
+            domain = new URL("https://webflow.com").hostname;
+          } catch (err) {
+            console.log(err);
+            domain = window.location.hostname.toString();
+          }
+
+          expireDate.setTime(expireDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+
+          document.cookie = [
+            firstTouchCookieKey,
+            "=",
+            encodeURIComponent(JSON.stringify(firstTouchParams)),
+            ";secure",
+            ";domain=.",
+            domain,
+            ";path=/",
+            ";expires=",
+            expireDate.toUTCString(),
+          ].join("");
+        }
+
+        function parseFirstTouchParams(firstTouchCookieKey, firstTouchCookie) {
+          try {
+            return JSON.parse(
+              decodeURIComponent(firstTouchCookie)
+                .trim()
+                .substring(
+                  firstTouchCookieKey.length + 1,
+                  firstTouchCookie.length
+                )
+            );
+          } catch (e) {
+            console.log(e);
+          }
+        }
+
+        // We apply a limit on a presignup breadcrumbs entry in order to not allow cookie to grow too big
+        // (above 4000 bytes, which was a max size of cookies allowed by our infrastructure
+        // when the issue was reported).
+        //
+        // A sophisticated approach could be to check length of a whole cookie and, if too big in bytes,
+        // decide what data to remove from the cookie. But we decided to take a simplified one:
+        // we know that "presignup_breadcrumbs" is so far the only first touch cookie's field which
+        // grows a lot over time (adding a URL to an array potentially on every page visit), therefore
+        // we can focus on that field only. Next, we do not count real bytes in a serialized cookie,
+        // but string chars (they could differ for example for emojis, but we do not expect emojis in URLs).
+        // Moreover, we ignore bytes added between array entries in a serialized JSON (double quotes, commas,
+        // spaces). Instead, we limit URLs to arbitrarily chosen:
+        // - max 10 URLs
+        // - max 1000 characters (sum of those URLs)
+        //
+        function limitPresignupBreadcrumbs(breadcrumbs) {
+          var urlsLimit = 10;
+          var charsLimit = 1000;
+
+          var limitedBreadcrumbs = [];
+
+          var charsTotal = 0;
+          for (let i = breadcrumbs.length - 1; i >= 0; i--) {
+            if (limitedBreadcrumbs.length < urlsLimit) {
+              charsTotal += breadcrumbs[i].length;
+              if (charsTotal <= charsLimit) {
+                limitedBreadcrumbs.push(breadcrumbs[i]);
+              }
+            }
+          }
+          limitedBreadcrumbs.reverse();
+          return limitedBreadcrumbs;
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////
+        // code for a logged in user
+
+        if (isLoggedIn) {
+          var a_uid = "";
+          var a_pl = "";
+          var a_cr = "";
+          var a_school = "";
+
+          // This is useful to quickly access user variables via window object
+          var _dashboard_vars = {
+            subscriptionPlan: a_pl,
+            created: a_cr,
+          };
+
+          window.wm_userRole = _dashboard_vars;
+
+          // Here we define user properties that are easier to define on the
+          // client side
+          var _user_meta = {
+            "last open dashboard": new Date(),
+          };
+
+          if (typeof dashboard != "undefined" && dashboard.queryObj().school) {
+            // school discount
+            _user_meta["School Discount"] = a_school ? true : false;
+          }
+
+          // Only call identify on dashboard paths
+          var pathname = window.location.pathname;
+          if (
+            /^\/dashboard(\/.*)?$/.test(pathname) ||
+            /^\/websites(\/.*)?$/.test(pathname) ||
+            /^\/designers(\/.*)?$/.test(pathname) ||
+            /^\/website(\/.*)?$/.test(pathname) ||
+            /^\/team(\/.*)?$/.test(pathname)
+          ) {
+            analytics.identify(a_uid, _user_meta);
+
+            // Identify user on Tatari for TV ads conversions
+            if (window.tatari && typeof window.tatari.identify === "function") {
+              window.tatari.identify(a_uid);
+            }
+          }
+
+          (function limitSizeOfPreviouslyCreatedFirstTouchCookie() {
+            var firstTouchCookieKey =
+              window.SharedConfig && window.SharedConfig.FIRST_TOUCH_COOKIE;
+            if (!firstTouchCookieKey) return;
+
+            var firstTouchCookie = getFirstTouchCookie(firstTouchCookieKey);
+            if (!firstTouchCookie) return;
+
+            var firstTouchParams = parseFirstTouchParams(
+              firstTouchCookieKey,
+              firstTouchCookie
+            );
+            if (!firstTouchParams) return;
+
+            if (firstTouchParams.presignup_breadcrumbs) {
+              firstTouchParams.presignup_breadcrumbs =
+                limitPresignupBreadcrumbs(
+                  firstTouchParams.presignup_breadcrumbs
+                );
+              setFirstTouchCookie(firstTouchCookieKey, firstTouchParams);
+            }
+          })();
+
+          return;
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////
+        // code for a logged out / anonymous user
+
+        if (!isLoggedIn) {
+          function getQueryParam(param) {
+            var query = window.location.search.substring(1);
+            var params = query.split("&");
+            for (var i = 0; i < params.length; i++) {
+              var pair = params[i].split("=");
+              if (decodeURIComponent(pair[0]) === param) {
+                return decodeURIComponent(pair[1]);
+              }
+            }
+            return null;
+          }
+
+          function getURLDomainName(url) {
+            var a = document.createElement("a");
+            a.href = url;
+            return a.hostname;
+          }
+
+          function getBreadcrumb() {
+            var match = "utm_";
+            var hasUtm = window.location.search
+              .substr(1)
+              .split("&")
+              .some(function (query) {
+                var chunks = query.split("=");
+                var key = chunks[0];
+                return key.startsWith(match);
+              });
+
+            return hasUtm
+              ? window.location.host +
+                  window.location.pathname +
+                  window.location.search +
+                  window.location.hash
+              : "";
+          }
+
+          function handleFirstTouchParams(
+            firstTouchCookieKey,
+            gatherFirstTouchParamsFn,
+            updateBreadcrumbInFirstTouchParamsFn
+          ) {
+            if (!firstTouchCookieKey) return;
+
+            var firstTouchCookie = getFirstTouchCookie(firstTouchCookieKey);
+            var breadcrumb = getBreadcrumb();
+
+            if (!firstTouchCookie) {
+              var firstTouchParams = gatherFirstTouchParamsFn(breadcrumb);
+              setFirstTouchCookie(firstTouchCookieKey, firstTouchParams);
+            } else if (breadcrumb) {
+              var firstTouchParams = parseFirstTouchParams(
+                firstTouchCookieKey,
+                firstTouchCookie
+              );
+              if (!firstTouchParams) return;
+              updateBreadcrumbInFirstTouchParamsFn(
+                firstTouchParams,
+                breadcrumb
+              );
+              setFirstTouchCookie(firstTouchCookieKey, firstTouchParams);
+            }
+          }
+
+          if (window.self !== window.top) {
+            // If this is loaded in an iframe, skip setting the first touch cookie.
+            // We load the dashboard sign up page in an iframe (within a modal) on marketing pages
+            // and the iframe has the incorrect first touch parameters.
+            // Therefore, we'll let the marketing page itself set the cookie and skip setting it here.
+            return;
+          }
+
+          handleFirstTouchParams(
+            window.SharedConfig && window.SharedConfig.FIRST_TOUCH_COOKIE,
+            function gatherFirstTouchParams(breadcrumb) {
+              var firstTouchParams = {
+                first_touch_date: new Date().toISOString(),
+                initial_utm_campaign: getQueryParam("utm_campaign"),
+                initial_utm_content: getQueryParam("utm_content"),
+                initial_utm_medium: getQueryParam("utm_medium"),
+                initial_utm_source: getQueryParam("utm_source"),
+                initial_utm_term: getQueryParam("utm_term"),
+                initial_gclid: getQueryParam("gclid"),
+                initial_page_url: document.location.href,
+              };
+              if (document.referrer) {
+                firstTouchParams["initial_referrer"] = document.referrer;
+                firstTouchParams["initial_referring_domain"] = getURLDomainName(
+                  document.referrer
+                );
+              }
+              if (breadcrumb) {
+                firstTouchParams.presignup_breadcrumbs =
+                  limitPresignupBreadcrumbs([breadcrumb]);
+              }
+              return firstTouchParams;
+            },
+            function updateBreadcrumbInFirstTouchParams(
+              firstTouchParams,
+              breadcrumb
+            ) {
+              if (!firstTouchParams.presignup_breadcrumbs) {
+                firstTouchParams.presignup_breadcrumbs = [];
+              }
+              firstTouchParams.presignup_breadcrumbs.push(breadcrumb);
+              firstTouchParams.presignup_breadcrumbs =
+                limitPresignupBreadcrumbs(
+                  firstTouchParams.presignup_breadcrumbs
+                );
+            }
+          );
+        }
+
+        ////////////////////////////////////////////////////////////////////////////////
+      })();
+    </script>
+    <link
+      href="//fonts.googleapis.com/css?family=Roboto:400,300,500|Inconsolata:400,700"
+      rel="stylesheet"
+      type="text/css"
+    /><link
+      href="//fonts.googleapis.com/css2?family=Bitter:ital,wght@0,100;0,200;1,100&amp;family=Roboto+Mono&amp;display=swap"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <script>
+      var apiKey = "pk_2nNBXyHVOq9PIwSiawFPnWu2IHvHwxiv";
+      // Adapted from PartnerStack snippet https://app.partnerstack.com/settings/integrations/snippet
+      function loadPartnerStack() {
+        var script = document.createElement("script");
+        script.src = "https://snippet.growsumo.com/growsumo.min.js";
+        script.type = "text/javascript";
+        script.async = "true";
+        script.onload = script.onreadystatechange = function () {
+          var rs = this.readyState;
+          if (rs && rs != "complete" && rs != "loaded") return;
+          try {
+            growsumo._initialize(apiKey);
+            if (typeof growsumoInit === "function") {
+              growsumoInit();
+            }
+          } catch (e) {}
+        };
+        var topScript = document.getElementsByTagName("script")[0];
+        topScript.parentNode.insertBefore(script, topScript);
+      }
+
+      if (Boolean(apiKey)) {
+        loadPartnerStack();
+      }
+    </script>
+  </body>
+</html>
